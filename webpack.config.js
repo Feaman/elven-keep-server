@@ -1,28 +1,31 @@
-const path = require('path')
+const path = require("path")
 
 module.exports = {
-  mode: 'production',
-  target: 'node',
+  mode: "production",
+  target: "node",
   entry: {
-    api: './src/api.ts',
+    api: "./src/api.ts",
+  },
+  optimization: {
+    minimize: false,
   },
   module: {
     rules: [
       {
         test: /\.tsx?$/,
-        use: 'ts-loader',
-        exclude: /node_modules/
-      }
-    ]
+        use: "ts-loader",
+        exclude: /node_modules/,
+      },
+    ],
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js'],
+    extensions: [".tsx", ".ts", ".js"],
     alias: {
-      '~': path.resolve(__dirname, './src')
-    }
+      "~": path.resolve(__dirname, "./src"),
+    },
   },
   output: {
-    filename: '[name].js',
-    path: path.resolve(__dirname, './dist')
-  }
+    filename: "[name].js",
+    path: path.resolve(__dirname, "./dist"),
+  },
 }

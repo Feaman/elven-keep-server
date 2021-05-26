@@ -6,47 +6,30 @@ import ListItemModel, { ListItemDataObject } from '~/models/list-item'
 export default class ListItemsService extends BaseService {
   static async create (data: any) {
     const activeStatus = await StatusesService.getActive()
+    const note = await NotesService.findById(data.noteId)
+    const listItem = new ListItemModel(data)
 
-    return new Promise((resolve, reject) => {
-      NotesService.findById(data.noteId)
-        .then(note => {
-          const listItem = new ListItemModel(data)
-          listItem.statusId = data.statusId || activeStatus.id
-          listItem.save()
-            .then(listItem => resolve(listItem))
-            .catch(error => reject(error))
-        })
-        .catch(error => reject(error))
-    })
+    listItem.statusId = data.statusId || activeStatus.id
+    listItem.noteId = note.id
+
+    return listItem.save()
   }
 
-  static update (listItemId: number, data: any) {
-    return new Promise((resolve, reject) => {
-      return this.findById(listItemId)
-        .then(listItem => {
-          listItem.text = data.text
-          listItem.statusId = data.statusId
-          listItem.checked = data.checked
-          listItem.completed = data.completed
+  static async update (listItemId: number, data: any) {
+    const activeStatus = await StatusesService.getActive()
+    const listItem = await this.findById(listItemId)
 
-          listItem.save()
-            .then(note => resolve(note))
-            .catch(error => reject(error))
-        })
-        .catch(error => reject(error))
-    })
+    listItem.text = data.text
+    listItem.statusId = data.statusId || activeStatus.id
+    listItem.checked = data.checked
+    listItem.completed = data.completed
+
+    return listItem.save()
   }
 
-  static remove (noteId: number) {
-    return new Promise((resolve, reject) => {
-      return this.findById(noteId)
-        .then(note => {
-          note.remove()
-            .then(() => resolve(''))
-            .catch(error => reject(error))
-        })
-        .catch(error => reject(error))
-    })
+  static async remove (listItemId: number) {
+    const listItem = await this.findById(listItemId)
+    return listItem.remove()
   }
 
   static async findById (listItemId: number): Promise<ListItemModel> {
@@ -62,7 +45,7 @@ export default class ListItemsService extends BaseService {
           return reject(error)
         }
 
-        const listItemData = listItemsData.find((listItemData: ListItemDataObject) => listItemData.id === listItemId)
+        const listItemData = listItemsData[0]
         if (!listItemData) {
           return reject(new Error(`List item with id '${listItemId}' not found`))
         }

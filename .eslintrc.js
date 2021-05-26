@@ -1,12 +1,15 @@
 module.exports = {
+  root: true,
   env: {
     node: true,
-    es6: true,
   },
   parser: "babel-eslint",
   parserOptions: {
     sourceType: "module",
   },
+  extends: [
+    'standard'
+  ],
   rules: {
     // allow trailing comma
     "comma-dangle": ["error", "only-multiline"],
