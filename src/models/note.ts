@@ -73,7 +73,7 @@ export default class NoteModel {
   }
 
   validate () {
-    if (!((this.list && this.list.length) || this.text)) {
+    if (!((this.list && this.list.length) || this.text || this.title)) {
       return false
     }
 

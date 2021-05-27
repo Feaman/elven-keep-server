@@ -1,8 +1,8 @@
 {
-  "name": "server",
+  "name": "elven-keep",
   "version": "0.0.1",
-  "description": "Server",
-  "main": "index.js",
+  "description": "Handy notes like Google Keep",
+  "main": "api.js",
   "scripts": {
     "build": "webpack --config webpack.config.js"
   },
@@ -21,6 +21,7 @@
     "express": "^4.17.1",
     "mysql": "github:mysqljs/mysql",
     "mysql2": "^2.2.5",
+    "terser-webpack-plugin": "^5.1.2",
     "validatorjs": "^3.22.1",
     "webpack": "^5.36.2",
     "webpack-cli": "^4.6.0"

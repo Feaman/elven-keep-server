@@ -1,4 +1,5 @@
 const path = require("path")
+const TerserPlugin = require("terser-webpack-plugin")
 
 module.exports = {
   mode: "production",
@@ -7,7 +8,13 @@ module.exports = {
     api: "./src/api.ts",
   },
   optimization: {
-    minimize: false,
+    minimizer: [
+      new TerserPlugin({
+        terserOptions: {
+          mangle: false,
+        },
+      }),
+    ],
   },
   module: {
     rules: [
