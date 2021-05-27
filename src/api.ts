@@ -4,6 +4,8 @@ import NotesService from '~/services/notes'
 import StatusesService from './services/statuses'
 import TypesService from '~/services/types'
 import ListItemsService from './services/list-item'
+import UsersService from './services/users'
+import UserModel from './models/user'
 
 const express = require('express')
 const cors = require('cors')
@@ -15,6 +17,7 @@ BaseService.init()
 
 app.listen('3015', async function () {
   console.log('STARTED')
+  console.log(UserModel.hashPassword('1'))
 })
 
 app.get('/types', (_request: Request, response: Response, next: NextFunction) => {
@@ -104,5 +107,37 @@ app.delete('/list-items/:listItemId', (request: Request, response: Response, nex
       .catch(error => next(error))
   } catch (error) {
     next(error)
+  }
+})
+
+app.post('/login', (request: Request, response: Response, next: NextFunction) => {
+  try {
+    UsersService.login(request.body)
+      .then(user => response.send(user))
+      .catch(error => {
+        response
+          .status(400)
+          .send({ status: 400, message: error.message })
+      })
+  } catch (error) {
+    response
+      .status(500)
+      .send({ status: 500, message: 'Something goes wrong' })
+  }
+})
+
+app.post('/users', (request: Request, response: Response, next: NextFunction) => {
+  try {
+    UsersService.create(request.body)
+      .then(user => response.send(user))
+      .catch(error => {
+        response
+          .status(400)
+          .send({ status: 400, message: error.message })
+      })
+  } catch (error) {
+    response
+      .status(500)
+      .send({ status: 500, message: 'Something goes wrong' })
   }
 })

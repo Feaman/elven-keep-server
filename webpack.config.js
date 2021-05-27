@@ -8,6 +8,7 @@ module.exports = {
     api: "./src/api.ts",
   },
   optimization: {
+    minimize: false,
     minimizer: [
       new TerserPlugin({
         terserOptions: {
