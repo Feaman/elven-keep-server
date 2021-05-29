@@ -9,42 +9,82 @@ import UserModel from './models/user'
 
 const express = require('express')
 const cors = require('cors')
+const jwt = require('jsonwebtoken')
 const app = express()
+const tokenKey = '1a2b-3c4d-5e6f-7g8h'
+const port = 3015
+
 app.use(express.json()) // for parsing application/json
 app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
 app.use(cors())
 BaseService.init()
 
-app.listen('3015', async function () {
-  console.log('STARTED')
-  console.log(UserModel.hashPassword('1'))
-})
+function checkAccess (request: Request, response: Response) {
+  if (request.body._user) {
+    return true
+  }
 
-app.get('/types', (_request: Request, response: Response, next: NextFunction) => {
-  try {
-    TypesService.getList()
-      .then(types => response.send(types))
-      .catch(error => next(error))
-  } catch (error) {
-    next(error)
+  response
+    .status(401)
+    .send({ message: 'Not Authorized' })
+
+  return false
+}
+
+app.use((request: Request, _response: Response, next: NextFunction) => {
+  if (request.headers.authorization) {
+    jwt.verify(
+      request.headers.authorization.split(' ')[1],
+      tokenKey,
+      (error: Error, user: any) => {
+        if (error) {
+          next(error)
+        } else if (user) {
+          UsersService.findById(user.id)
+            .then((user: UserModel) => {
+              if (request.body) {
+                request.body._user = user
+              } else {
+                request.body = { _user: user }
+              }
+              next()
+            })
+            .catch(error => {
+              next(error)
+            })
+        } else {
+          next(error)
+        }
+      }
+    )
+  } else {
+    next()
   }
 })
 
-app.get('/statuses', (_request: Request, response: Response, next: NextFunction) => {
-  try {
-    StatusesService.getList()
-      .then(statuses => response.send(statuses))
-      .catch(error => next(error))
-  } catch (error) {
-    next(error)
-  }
+app.listen(port, async function () {
+  console.log(`STARTED on port ${port}`)
 })
 
-app.get('/notes', (_request: Request, response: Response, next: NextFunction) => {
+app.get('/config', (request: Request, response: Response, next: NextFunction) => {
   try {
-    NotesService.getList()
-      .then(notes => response.send(notes))
-      .catch(error => next(error))
+    if (checkAccess(request, response)) {
+      Promise.all([TypesService.getList(), StatusesService.getList()])
+        .then(results => {
+          NotesService.getList(request.body._user)
+            .then(notes => {
+              response.status(200)
+                .json({
+                  notes,
+                  types: results[0],
+                  statuses: results[1],
+                  user: request.body._user,
+                })
+            })
+            .catch(error => next(error))
+        })
+        .catch(error => next(error))
+    }
   } catch (error) {
     next(error)
   }
@@ -52,9 +92,11 @@ app.get('/notes', (_request: Request, response: Response, next: NextFunction) =>
 
 app.post('/notes', (request: Request, response: Response, next: NextFunction) => {
   try {
-    NotesService.create(request.body)
-      .then(note => response.send(note))
-      .catch(error => next(error))
+    if (checkAccess(request, response)) {
+      NotesService.create(request.body)
+        .then(note => response.send(note))
+        .catch(error => next(error))
+    }
   } catch (error) {
     next(error)
   }
@@ -62,9 +104,11 @@ app.post('/notes', (request: Request, response: Response, next: NextFunction) =>
 
 app.put('/notes/:noteId', (request: Request, response: Response, next: NextFunction) => {
   try {
-    NotesService.update(Number(request.params.noteId), request.body)
-      .then(note => response.send(note))
-      .catch(error => next(error))
+    if (checkAccess(request, response)) {
+      NotesService.update(Number(request.params.noteId), request.body)
+        .then(note => response.send(note))
+        .catch(error => next(error))
+    }
   } catch (error) {
     next(error)
   }
@@ -72,9 +116,11 @@ app.put('/notes/:noteId', (request: Request, response: Response, next: NextFunct
 
 app.delete('/notes/:noteId', (request: Request, response: Response, next: NextFunction) => {
   try {
-    NotesService.remove(Number(request.params.noteId))
-      .then(() => response.send())
-      .catch(error => next(error))
+    if (checkAccess(request, response)) {
+      NotesService.remove(Number(request.params.noteId), request.body._user)
+        .then(() => response.send())
+        .catch(error => next(error))
+    }
   } catch (error) {
     next(error)
   }
@@ -82,9 +128,11 @@ app.delete('/notes/:noteId', (request: Request, response: Response, next: NextFu
 
 app.post('/list-items', (request: Request, response: Response, next: NextFunction) => {
   try {
-    ListItemsService.create(request.body)
-      .then(listItem => response.send(listItem))
-      .catch(error => next(error))
+    if (checkAccess(request, response)) {
+      ListItemsService.create(request.body)
+        .then(listItem => response.send(listItem))
+        .catch(error => next(error))
+    }
   } catch (error) {
     next(error)
   }
@@ -92,9 +140,11 @@ app.post('/list-items', (request: Request, response: Response, next: NextFunctio
 
 app.put('/list-items/:listItemId', (request: Request, response: Response, next: NextFunction) => {
   try {
-    ListItemsService.update(Number(request.params.listItemId), request.body)
-      .then(() => response.send())
-      .catch(error => next(error))
+    if (checkAccess(request, response)) {
+      ListItemsService.update(Number(request.params.listItemId), request.body)
+        .then(() => response.send())
+        .catch(error => next(error))
+    }
   } catch (error) {
     next(error)
   }
@@ -102,9 +152,11 @@ app.put('/list-items/:listItemId', (request: Request, response: Response, next: 
 
 app.delete('/list-items/:listItemId', (request: Request, response: Response, next: NextFunction) => {
   try {
-    ListItemsService.remove(Number(request.params.listItemId))
-      .then(() => response.send())
-      .catch(error => next(error))
+    if (checkAccess(request, response)) {
+      ListItemsService.remove(Number(request.params.listItemId), request.body._user)
+        .then(() => response.send())
+        .catch(error => next(error))
+    }
   } catch (error) {
     next(error)
   }
@@ -113,7 +165,24 @@ app.delete('/list-items/:listItemId', (request: Request, response: Response, nex
 app.post('/login', (request: Request, response: Response, next: NextFunction) => {
   try {
     UsersService.login(request.body)
-      .then(user => response.send(user))
+      .then(user => {
+        Promise.all([TypesService.getList(), StatusesService.getList()])
+          .then(results => {
+            NotesService.getList(user)
+              .then(notes => {
+                response.status(200)
+                  .json({
+                    notes,
+                    types: results[0],
+                    statuses: results[1],
+                    user,
+                    token: jwt.sign({ id: user.id }, tokenKey),
+                  })
+              })
+              .catch(error => next(error))
+          })
+          .catch(error => next(error))
+      })
       .catch(error => {
         response
           .status(400)
@@ -129,7 +198,24 @@ app.post('/login', (request: Request, response: Response, next: NextFunction) =>
 app.post('/users', (request: Request, response: Response, next: NextFunction) => {
   try {
     UsersService.create(request.body)
-      .then(user => response.send(user))
+      .then(user => {
+        Promise.all([TypesService.getList(), StatusesService.getList()])
+          .then(results => {
+            NotesService.getList(user)
+              .then(notes => {
+                response.status(200)
+                  .json({
+                    notes,
+                    types: results[0],
+                    statuses: results[1],
+                    user,
+                    token: jwt.sign({ id: user.id }, tokenKey),
+                  })
+              })
+              .catch(error => next(error))
+          })
+          .catch(error => next(error))
+      })
       .catch(error => {
         response
           .status(400)

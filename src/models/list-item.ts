@@ -2,6 +2,7 @@ import { OkPacket } from "mysql2/typings/mysql/lib/protocol/packets"
 import Validator from "validatorjs"
 import BaseService from "~/services/base"
 import StatusesService from "~/services/statuses"
+import UserModel from "./user"
 
 export interface ListItemDataObject {
   id: number,
@@ -43,7 +44,7 @@ export default class ListItemModel {
     return validation.passes()
   }
 
-  save () {
+  async save () {
     return new Promise((resolve, reject) => {
       if (!this.validate()) {
         return reject(new Error('List item validation failed'))
@@ -81,7 +82,7 @@ export default class ListItemModel {
     })
   }
 
-  async remove () {
+  async remove (user: UserModel) {
     const inactiveStatus = await StatusesService.getInActive()
     this.statusId = inactiveStatus.id
     return this.save()

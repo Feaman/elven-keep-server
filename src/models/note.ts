@@ -3,6 +3,7 @@ import BaseService from '~/services/base'
 import StatusesService from '~/services/statuses'
 import { OkPacket } from 'mysql2/typings/mysql/lib/protocol/packets'
 import Validator from 'validatorjs'
+import UserModel from './user'
 
 export interface NoteDataObject {
   id: number,
@@ -81,7 +82,7 @@ export default class NoteModel {
     return validation.passes()
   }
 
-  save () {
+  save (user: UserModel) {
     return new Promise((resolve, reject) => {
       if (!this.validate()) {
         return reject(new Error('Note validation failed'))
@@ -93,6 +94,7 @@ export default class NoteModel {
           text: this.text,
           type_id: this.typeId,
           status_id: this.statusId,
+          user_id: user.id,
           is_completed_list_expanded: (typeof this.isCompletedListExpanded === "boolean") ? this.isCompletedListExpanded : true,
         }
         BaseService.pool.query('insert into notes set ?', data, (error, result: OkPacket) => {
@@ -119,9 +121,9 @@ export default class NoteModel {
     })
   }
 
-  async remove () {
+  async remove (user: UserModel) {
     const inactiveStatus = await StatusesService.getInActive()
     this.statusId = inactiveStatus.id
-    return this.save()
+    return this.save(user)
   }
 }

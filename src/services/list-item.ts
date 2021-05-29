@@ -2,11 +2,12 @@ import BaseService from '~/services/base'
 import StatusesService from '~/services/statuses'
 import NotesService from './notes'
 import ListItemModel, { ListItemDataObject } from '~/models/list-item'
+import UserModel from '~/models/user'
 
 export default class ListItemsService extends BaseService {
   static async create (data: any) {
     const activeStatus = await StatusesService.getActive()
-    const note = await NotesService.findById(data.noteId)
+    const note = await NotesService.findById(data.noteId, data._user)
     const listItem = new ListItemModel(data)
 
     listItem.statusId = data.statusId || activeStatus.id
@@ -18,6 +19,7 @@ export default class ListItemsService extends BaseService {
   static async update (listItemId: number, data: any) {
     const activeStatus = await StatusesService.getActive()
     const listItem = await this.findById(listItemId)
+    await NotesService.findById(listItem.noteId, data._user)
 
     listItem.text = data.text
     listItem.statusId = data.statusId || activeStatus.id
@@ -27,9 +29,9 @@ export default class ListItemsService extends BaseService {
     return listItem.save()
   }
 
-  static async remove (listItemId: number) {
+  static async remove (listItemId: number, user:UserModel) {
     const listItem = await this.findById(listItemId)
-    return listItem.remove()
+    return listItem.remove(user)
   }
 
   static async findById (listItemId: number): Promise<ListItemModel> {

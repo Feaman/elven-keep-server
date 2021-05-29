@@ -9,7 +9,7 @@ export default class StatusesService extends BaseService {
       if (this.list.length) {
         resolve(this.list)
       } else {
-        this.pool.query( "SELECT * from statuses", (error: Error, result: any) => {
+        this.pool.query("SELECT * from statuses", (error: Error, result: any) => {
           if (error) {
             return reject(error)
           }
@@ -29,11 +29,11 @@ export default class StatusesService extends BaseService {
 
     return status
   }
-  
+
   static getActive () {
     return this.findByName(StatusModel.STATUS_ACTIVE)
   }
-  
+
   static getInActive () {
     return this.findByName(StatusModel.STATUS_INACTIVE)
   }

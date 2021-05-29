@@ -26,7 +26,7 @@ export default class UserModel {
     email: 'required|email',
     password: 'string',
     passwordHash: 'string',
-  };
+  }
 
   constructor (data: UserDataObject) {
     this.id = data.id
@@ -42,8 +42,12 @@ export default class UserModel {
     return validation.passes()
   }
 
-  save () {
+  save (): Promise<UserModel> {
     return new Promise((resolve, reject) => {
+      const validation = new Validator(this, { email: UserModel.rules.email })
+      if (validation.fails()) {
+        return reject(new Error('Email format is so wrong'))
+      }
       if (!this.validate()) {
         return reject(new Error('User validation failed'))
       }
@@ -79,20 +83,26 @@ export default class UserModel {
     })
   }
 
-  static async hashPassword (password: string) {
-    const argon2 = require('argon2')
+  static hashPassword (password: string) {
+    // const argon2 = require('argon2')
 
     try {
-      return await argon2.hash("password")
+      // return await argon2.hash("password")
+      return require('crypto')
+        .createHash('sha256')
+        .update(password)
+        .digest('hex')
     } catch (err) {
       throw new Error('Password hashing error')
     }
   }
 
-  static async comparePassword (password: string, passwordHash: string) {
-    const argon2 = require('argon2')
+  static comparePassword (password: string, passwordHash: string) {
+    // const argon2 = require('argon2')
     try {
-      return await argon2.verify(passwordHash, password)
+      // return await argon2.verify(passwordHash, password);
+      const requestPasswordHash = this.hashPassword(password)
+      return requestPasswordHash === passwordHash
     } catch (err) {
       throw new Error('Password compare error')
     }
