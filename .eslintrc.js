@@ -3,12 +3,17 @@ module.exports = {
   env: {
     node: true,
   },
-  parser: "babel-eslint",
+  parser: "@typescript-eslint/parser",
+  plugins: [
+    "@typescript-eslint"
+  ],
   parserOptions: {
     sourceType: "module",
   },
   extends: [
-    'standard'
+    "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended"
   ],
   rules: {
     // allow trailing comma
