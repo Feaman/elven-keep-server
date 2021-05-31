@@ -22,6 +22,7 @@ module.exports = {
     // allow paren-less arrow functions
     "arrow-parens": 0,
     quotes: "off",
+    '@typescript-eslint/no-var-requires': "off",
     "no-return-assign": "off",
     // allow async-await
     "generator-star-spacing": 0,

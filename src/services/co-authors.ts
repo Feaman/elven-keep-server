@@ -1,0 +1,145 @@
+import BaseService from '~/services/base'
+import { MysqlError } from 'mysql'
+import { NoteCoAuthorDataObject, NoteCoAuthorDBDataObject } from '~/models/co-author'
+import NoteCoAuthorModel from '~/models/co-author'
+import StatusesService from './statuses'
+import UserModel from '~/models/user'
+import NotesService from './notes'
+import UsersService from './users'
+
+export default class NoteCoAuthorsService extends BaseService {
+  static async create (noteId: string, coAuthorEmail: string, user: UserModel): Promise<UserModel> {
+    if (user.email.trim() === coAuthorEmail.trim()) {
+      throw new Error(`This is note author's email`)
+    }
+
+    const note = await NotesService.findById(Number(noteId), user)
+    if (!note) {
+      throw new Error(`Note with id '${noteId}' not found`)
+    }
+
+    // Check co-author
+    const coAuthorUser = await UsersService.findByEmail(coAuthorEmail)
+    if (!coAuthorUser) {
+      throw new Error(`Co-author with email '${coAuthorEmail}' not found`)
+    }
+
+    // Check existence
+    const existentCoAuthor = await this.find(Number(noteId), coAuthorUser.id)
+    if (existentCoAuthor) {
+      throw new Error('Co-author with such an email is already exists')
+    }
+
+    const activeStatus = await StatusesService.getActive()
+    const noteCoAuthor = new NoteCoAuthorModel({ noteId: Number(noteId), userId: coAuthorUser.id, statusId: activeStatus.id })
+
+    await noteCoAuthor.save()
+    return coAuthorUser
+  }
+
+  static async delete (noteCoAuthorId: number, user: UserModel): Promise<NoteCoAuthorModel> {
+    // Check note co-author
+    const noteCoAuthor = await NoteCoAuthorsService.findById(noteCoAuthorId)
+    if (!noteCoAuthor) {
+      throw new Error(`Note co-author with id '${noteCoAuthorId}' not found`)
+    }
+
+    // Check note
+    const note = await NotesService.findById(noteCoAuthor.noteId, user)
+    if (!note) {
+      throw new Error(`Note with id '${noteCoAuthor.noteId}' not found`)
+    }
+
+    // Check note user access
+    if (note.userId !== user.id) {
+      throw new Error('There is no access to note by this user')
+    }
+
+    return noteCoAuthor.remove()
+  }
+
+  static find (noteId: number, coAuthorId: number): Promise<NoteCoAuthorModel | null> {
+    return new Promise((resolve, reject) => {
+      this.pool.query({
+        sql: `select * from note_co_authors where note_id = ? and user_id = ?`,
+        values: [noteId, coAuthorId],
+      },
+      (error: MysqlError, coAuthorsDBData: NoteCoAuthorDBDataObject[]) => {
+        if (error) {
+          return reject(error)
+        }
+        if (!coAuthorsDBData.length) {
+          return resolve(null)
+        }
+
+        const noteCoAuthorDBData: NoteCoAuthorDBDataObject = coAuthorsDBData[0]
+        const noteCoAuthorData: NoteCoAuthorDataObject = {
+          id: noteCoAuthorDBData.id,
+          noteId: noteCoAuthorDBData.note_id,
+          userId: noteCoAuthorDBData.user_id,
+          statusId: noteCoAuthorDBData.status_id,
+        }
+
+        resolve(new NoteCoAuthorModel(noteCoAuthorData))
+      })
+    })
+  }
+
+  static async findById (noteCoAuthorId: number): Promise<NoteCoAuthorModel | null> {
+    const activeStatus = await StatusesService.getActive()
+    return new Promise((resolve, reject) => {
+      this.pool.query({
+        sql: `select * from note_co_authors where id = ? and status_id = ?`,
+        values: [noteCoAuthorId, activeStatus.id],
+      },
+      (error: MysqlError, coAuthorsDBData: NoteCoAuthorDBDataObject[]) => {
+        if (error) {
+          return reject(error)
+        }
+        if (!coAuthorsDBData.length) {
+          return resolve(null)
+        }
+
+        const noteCoAuthorDBData: NoteCoAuthorDBDataObject = coAuthorsDBData[0]
+        const noteCoAuthorData: NoteCoAuthorDataObject = {
+          id: noteCoAuthorDBData.id,
+          noteId: noteCoAuthorDBData.note_id,
+          userId: noteCoAuthorDBData.user_id,
+          statusId: noteCoAuthorDBData.status_id,
+        }
+
+        resolve(new NoteCoAuthorModel(noteCoAuthorData))
+      })
+    })
+  }
+
+  static async findByUserId (user: UserModel): Promise<NoteCoAuthorModel[] | null> {
+    const activeStatus = await StatusesService.getActive()
+    return new Promise((resolve, reject) => {
+      this.pool.query({
+        sql: `select * from note_co_authors where user_id = ? and status_id = ?`,
+        values: [user.id, activeStatus.id],
+      },
+      (error: MysqlError, coAuthorsDBData: NoteCoAuthorDBDataObject[]) => {
+        if (error) {
+          return reject(error)
+        }
+        if (!coAuthorsDBData.length) {
+          return resolve(null)
+        }
+
+        const noteCoAuthorsDBData: NoteCoAuthorDBDataObject[] = coAuthorsDBData
+        const noteCoAuthors: NoteCoAuthorModel[] = []
+        noteCoAuthorsDBData.forEach((noteCoAuthorDBData: NoteCoAuthorDBDataObject) => {
+          noteCoAuthors.push(new NoteCoAuthorModel({
+            id: noteCoAuthorDBData.id,
+            noteId: noteCoAuthorDBData.note_id,
+            userId: noteCoAuthorDBData.user_id,
+            statusId: noteCoAuthorDBData.status_id,
+          }))
+        })
+        resolve(noteCoAuthors)
+      })
+    })
+  }
+}

@@ -1,6 +1,6 @@
 import BaseService from '~/services/base'
-import { OkPacket } from 'mysql2/typings/mysql/lib/protocol/packets'
 import Validator from 'validatorjs'
+import { MysqlError, OkPacket } from 'mysql'
 
 export interface UserDataObject {
   id: number,
@@ -8,6 +8,15 @@ export interface UserDataObject {
   secondName: string,
   email: string,
   passwordHash: string,
+  password: string,
+}
+
+export interface UserDBObject {
+  id: number,
+  first_name: string,
+  second_name: string,
+  email: string,
+  password_hash: string,
   password: string,
 }
 
@@ -37,9 +46,9 @@ export default class UserModel {
     this.password = data.password
   }
 
-  validate () {
+  validate (): boolean {
     const validation = new Validator(this, UserModel.rules)
-    return validation.passes()
+    return !!validation.passes()
   }
 
   save (): Promise<UserModel> {
@@ -59,7 +68,7 @@ export default class UserModel {
           email: this.email,
           password_hash: UserModel.hashPassword(this.password),
         }
-        BaseService.pool.query('insert into users set ?', data, (error, result: OkPacket) => {
+        BaseService.pool.query('insert into users set ?', data, (error: MysqlError | null, result: OkPacket) => {
           if (error) {
             return reject(error)
           }
@@ -72,7 +81,7 @@ export default class UserModel {
         BaseService.pool.query(
           'update notes set first_name = ?, second_name = ?, email = ?, password_hash = ? where id = ?',
           queryParams,
-          error => {
+          (error: MysqlError | null) => {
             if (error) {
               return reject(error)
             }
@@ -83,7 +92,7 @@ export default class UserModel {
     })
   }
 
-  static hashPassword (password: string) {
+  static hashPassword (password: string): string {
     // const argon2 = require('argon2')
 
     try {
@@ -97,7 +106,7 @@ export default class UserModel {
     }
   }
 
-  static comparePassword (password: string, passwordHash: string) {
+  static comparePassword (password: string, passwordHash: string): boolean {
     // const argon2 = require('argon2')
     try {
       // return await argon2.verify(passwordHash, password);

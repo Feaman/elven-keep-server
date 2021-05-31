@@ -1,25 +1,24 @@
-import { OkPacket } from "mysql2/typings/mysql/lib/protocol/packets"
+import { MysqlError, OkPacket } from "mysql"
 import Validator from "validatorjs"
 import BaseService from "~/services/base"
 import StatusesService from "~/services/statuses"
-import UserModel from "./user"
 
 export interface ListItemDataObject {
   id: number,
   note_id: number,
   text: string | '',
-  checked: Boolean,
+  checked: boolean,
   status_id: number,
-  completed: Boolean,
+  completed: boolean,
 }
 
 export default class ListItemModel {
   id: number
   noteId: number
   text: string | ''
-  checked: Boolean
+  checked: boolean
   statusId: number
-  completed: Boolean
+  completed: boolean
 
   static rules = {
     id: 'numeric',
@@ -39,12 +38,12 @@ export default class ListItemModel {
     this.noteId = data.note_id
   }
 
-  validate () {
+  validate (): boolean {
     const validation = new Validator(this, ListItemModel.rules)
-    return validation.passes()
+    return !!validation.passes()
   }
 
-  async save () {
+  async save (): Promise<ListItemModel> {
     return new Promise((resolve, reject) => {
       if (!this.validate()) {
         return reject(new Error('List item validation failed'))
@@ -58,7 +57,7 @@ export default class ListItemModel {
           completed: this.completed,
           note_id: this.noteId,
         }
-        BaseService.pool.query('insert into list_items set ?', data, (error, result: OkPacket) => {
+        BaseService.pool.query('insert into list_items set ?', data, (error: MysqlError | null, result: OkPacket) => {
           if (error) {
             return reject(error)
           }
@@ -71,7 +70,7 @@ export default class ListItemModel {
         BaseService.pool.query(
           'update list_items SET status_id = ?, text = ?, checked = ?, completed = ? where id = ?',
           queryParams,
-          error => {
+          (error: MysqlError | null) => {
             if (error) {
               return reject(error)
             }
@@ -82,7 +81,7 @@ export default class ListItemModel {
     })
   }
 
-  async remove (user: UserModel) {
+  async remove (): Promise<ListItemModel> {
     const inactiveStatus = await StatusesService.getInActive()
     this.statusId = inactiveStatus.id
     return this.save()

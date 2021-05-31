@@ -1,9 +1,10 @@
 import ListItemModel, { ListItemDataObject } from './list-item'
 import BaseService from '~/services/base'
 import StatusesService from '~/services/statuses'
-import { OkPacket } from 'mysql2/typings/mysql/lib/protocol/packets'
+import { MysqlError, OkPacket } from 'mysql'
 import Validator from 'validatorjs'
-import UserModel from './user'
+import UserModel, { UserDataObject } from './user'
+import NoteCoAuthorModel, { NoteCoAuthorDataObject, NoteCoAuthorDBDataObject } from './co-author'
 
 export interface NoteDataObject {
   id: number,
@@ -11,8 +12,10 @@ export interface NoteDataObject {
   text: string | '',
   type_id: number,
   status_id: number,
+  user_id: number,
   is_completed_list_expanded: boolean,
   list: ListItemDataObject[],
+  coAuthors: UserModel[],
 }
 
 export default class NoteModel {
@@ -22,7 +25,9 @@ export default class NoteModel {
   list: ListItemModel[] = []
   typeId: number
   statusId: number
+  userId: number
   isCompletedListExpanded = true
+  coAuthors: NoteCoAuthorModel[] = []
 
   static rules = {
     id: 'numeric',
@@ -39,10 +44,11 @@ export default class NoteModel {
     this.text = data.text || ''
     this.typeId = data.type_id
     this.statusId = data.status_id
+    this.userId = data.user_id
     this.isCompletedListExpanded = data.is_completed_list_expanded
   }
 
-  handleList (listItemsData: ListItemDataObject[]) {
+  handleList (listItemsData: ListItemDataObject[]): void {
     if (!listItemsData.length) {
       return
     }
@@ -51,14 +57,14 @@ export default class NoteModel {
     this.list = listItems
   }
 
-  async fillList () {
+  async fillList (): Promise<ListItemModel[]> {
     const activeStatus = await StatusesService.getActive()
 
     return new Promise((resolve, reject) => {
       BaseService.pool.query(
         `select * from list_items where note_id = ? and status_id = ${activeStatus.id}`,
         [this.id],
-        (error, listItemsData: Array<any>) => {
+        (error: MysqlError | null, listItemsData: ListItemDataObject[]) => {
           if (error) {
             return reject(error)
           }
@@ -73,16 +79,67 @@ export default class NoteModel {
     })
   }
 
-  validate () {
+  async fillCoAuthors (): Promise<NoteCoAuthorModel[]> {
+    const activeStatus = await StatusesService.getActive()
+
+    return new Promise((resolve, reject) => {
+      BaseService.pool.query(
+        `select
+          note_co_authors.id,
+          note_co_authors.note_id,
+          note_co_authors.user_id,
+          note_co_authors.status_id,
+          users.id as user_id,
+          users.first_name,
+          users.second_name,
+          users.email
+        from note_co_authors
+        inner join users on users.id = note_co_authors.user_id
+        where note_co_authors.note_id = ? and status_id = ${activeStatus.id}`,
+        [this.id],
+        (error: MysqlError | null, coAuthorsDBData: NoteCoAuthorDBDataObject[]) => {
+          if (error) {
+            return reject(error)
+          }
+
+          const coAuthors: NoteCoAuthorModel[] = []
+          coAuthorsDBData.forEach((coAuthorDBData: NoteCoAuthorDBDataObject) => {
+            const coAuthorData: NoteCoAuthorDataObject = {
+              id : coAuthorDBData.id,
+              noteId : coAuthorDBData.note_id,
+              userId : coAuthorDBData.user_id,
+              statusId: coAuthorDBData.status_id,
+            }
+            const userData: UserDataObject = {
+              id: 0,
+              firstName : coAuthorDBData.first_name,
+              secondName : coAuthorDBData.second_name,
+              email : coAuthorDBData.email,
+              password: '',
+              passwordHash: '',
+            }
+            const noteCoAuthor = new NoteCoAuthorModel(coAuthorData)
+            noteCoAuthor.user = new UserModel(userData)
+            coAuthors.push(noteCoAuthor)
+          })
+
+          this.coAuthors = coAuthors
+          resolve(coAuthors)
+        }
+      )
+    })
+  }
+
+  validate (): boolean {
     if (!((this.list && this.list.length) || this.text || this.title)) {
       return false
     }
 
     const validation = new Validator(this, NoteModel.rules)
-    return validation.passes()
+    return !!validation.passes()
   }
 
-  save (user: UserModel) {
+  save (user: UserModel): Promise<NoteModel> {
     return new Promise((resolve, reject) => {
       if (!this.validate()) {
         return reject(new Error('Note validation failed'))
@@ -97,7 +154,7 @@ export default class NoteModel {
           user_id: user.id,
           is_completed_list_expanded: (typeof this.isCompletedListExpanded === "boolean") ? this.isCompletedListExpanded : true,
         }
-        BaseService.pool.query('insert into notes set ?', data, (error, result: OkPacket) => {
+        BaseService.pool.query('insert into notes set ?', data, (error: MysqlError | null, result: OkPacket) => {
           if (error) {
             return reject(error)
           }
@@ -110,7 +167,7 @@ export default class NoteModel {
         BaseService.pool.query(
           'update notes set title = ?, text = ?, status_id = ?, type_id = ?, is_completed_list_expanded = ? where id = ?',
           queryParams,
-          error => {
+          (error: MysqlError | null) => {
             if (error) {
               return reject(error)
             }
@@ -121,7 +178,7 @@ export default class NoteModel {
     })
   }
 
-  async remove (user: UserModel) {
+  async remove (user: UserModel): Promise<NoteModel> {
     const inactiveStatus = await StatusesService.getInActive()
     this.statusId = inactiveStatus.id
     return this.save(user)

@@ -1,61 +1,62 @@
 import BaseService from '~/services/base'
-import UserModel, { UserDataObject } from '~/models/user'
+import UserModel, { UserDataObject, UserDBObject } from '~/models/user'
+import { MysqlError } from 'mysql'
 
 export default class UsersService extends BaseService {
-  static async create (userData: UserDataObject) {
-    try {
-      const existentUser = await this.findByEmail(userData.email)
-      if (existentUser) {
-        return Promise.reject(new Error('User with such an email is already exists'))
-      }
-    } catch (error) {
+  static async create (userData: UserDataObject): Promise<UserModel> {
+    const existentUser = await this.findByEmail(userData.email)
+    if (existentUser) {
+      throw new Error('User with such an email is already exists')
     }
+
     const user = new UserModel(userData)
     return user.save()
   }
 
-  static async login (userData: UserDataObject) {
-    try {
-      const user = await this.findByEmail(userData.email)
-      if (UserModel.comparePassword(userData.password, user.passwordHash)) {
-        user.passwordHash = ''
-        return Promise.resolve(user)
-      } else {
-        return Promise.reject(new Error('Wrong email or password'))
-      }
-    } catch (error) {
-      return Promise.reject(new Error('Wrong email or password'))
+  static async login (userData: UserDataObject): Promise<UserModel> {
+    const user = await this.findByEmail(userData.email)
+    if (!user) {
+      throw new Error('User with such an email is already exists')
     }
+
+    if (!UserModel.comparePassword(userData.password, user.passwordHash)) {
+      throw new Error('Wrong email or password')
+    }
+    user.passwordHash = ''
+    return user
   }
 
-  static findById (id: string): Promise<UserModel> {
+  static findById (id: string): Promise<UserModel | null> {
     return this.findByField('id', id)
   }
 
-  static findByEmail (email: string): Promise<UserModel> {
+  static findByEmail (email: string): Promise<UserModel | null> {
     return this.findByField('email', email)
   }
 
-  static findByField (fieldName: string, fieldValue: string): Promise<UserModel> {
+  static findByField (fieldName: string, fieldValue: string): Promise<UserModel | null> {
     return new Promise((resolve, reject) => {
       this.pool.query({
         sql: `select * from users where ${fieldName} = ?`,
         values: [fieldValue],
       },
-      (error, usersData: UserDataObject[]) => {
+      (error: MysqlError, usersDBData: UserDBObject[]) => {
         if (error) {
           return reject(error)
         }
 
-        usersData.forEach((userData: any) => {
-          userData.firstName = userData.first_name
-          userData.secondName = userData.second_name
-          userData.passwordHash = userData.password_hash
-        })
+        if (!usersDBData.length) {
+          return resolve(null)
+        }
 
-        const userData = usersData.find((userData: any) => userData[fieldName] === fieldValue)
-        if (!userData) {
-          return reject(new Error(`User with field ${fieldName} = ${fieldValue} not found`))
+        const userDBData = usersDBData[0]
+        const userData: UserDataObject = {
+            id : userDBData.id,
+            firstName : userDBData.first_name,
+            secondName : userDBData.second_name,
+            email : userDBData.email,
+            passwordHash : userDBData.password_hash,
+            password : userDBData.password,
         }
 
         resolve(new UserModel(userData))

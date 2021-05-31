@@ -2,6 +2,7 @@ import cors from 'cors';
 import express, { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import BaseService from './services/base';
+import NoteCoAuthorsService from './services/co-authors';
 import ListItemsService from './services/list-item';
 import NotesService from './services/notes';
 import StatusesService from './services/statuses';
@@ -35,8 +36,19 @@ app.use(async (request: Request, _response: Response, next: NextFunction) => {
       jwt.verify(request.headers.authorization.split(' ')[1], TOKEN_KEY)
     );
     const user = await UsersService.findById(payload.id);
+    if (user) {
+      storage.set(
+        request, 
+        {
+          id: user.id,
+          firstName: user.firstName,
+          secondName: user.secondName,
+          email: user.email,
+        }
+        );
+    }
+    next()
 
-    storage.set(request, { id: user.id });
   } catch (error) {
     return next(error);
   }
@@ -54,7 +66,7 @@ app.get(
       const user = storage.get(request);
       const listTypes = await TypesService.getList();
       const listStatuses = await StatusesService.getList();
-      const listNotes = NotesService.getList(user);
+      const listNotes = await NotesService.getList(user);
 
       return response.status(200).json({
         notes: listNotes,
@@ -73,10 +85,36 @@ app.post(
   checkAccess,
   async (request: Request, response: Response, next: NextFunction) => {
     try {
-      await NotesService.create(request.body);
-      return response.send('Ok');
+      const note = await NotesService.create(request.body, storage.get(request));
+      return response.send(note);
     } catch (error) {
       return next(error);
+    }
+  },
+);
+
+app.post(
+  '/notes/:noteId/co-author',
+  checkAccess,
+  async (request: Request, response: Response) => {
+    try {
+      const coAuthor = await NoteCoAuthorsService.create(request.params.noteId, request.body.email, storage.get(request));
+      return response.send(coAuthor);
+    } catch (error) {
+      return response.status(400).send({statusCode: 400, message: error.message });
+    }
+  },
+);
+
+app.delete(
+  '/notes/co-author/:noteIoAuthorId',
+  checkAccess,
+  async (request: Request, response: Response) => {
+    try {
+      const coAuthor = await NoteCoAuthorsService.delete(Number(request.params.noteIoAuthorId), storage.get(request));
+      return response.send(coAuthor);
+    } catch (error) {
+      return response.status(400).send({statusCode: 400, message: error.message });
     }
   },
 );
@@ -87,7 +125,7 @@ app.put(
   async (request: Request, response: Response, next: NextFunction) => {
     try {
       const { noteId } = request.params;
-      const note = await NotesService.update(Number(noteId), request.body);
+      const note = await NotesService.update(Number(noteId), request.body, storage.get(request));
       response.send(note);
     } catch (error) {
       return next(error);
@@ -115,7 +153,8 @@ app.post(
   checkAccess,
   async (request: Request, response: Response, next: NextFunction) => {
     try {
-      const listItem = await ListItemsService.create(request.body);
+      const user = storage.get(request);
+      const listItem = await ListItemsService.create(request.body, user);
       return response.send(listItem);
     } catch (error) {
       next(error);
@@ -128,9 +167,10 @@ app.put(
   checkAccess,
   async (request: Request, response: Response, next: NextFunction) => {
     const { listItemId } = request.params;
+    const user = storage.get(request);
     try {
-      await ListItemsService.update(Number(listItemId), request.body);
-      return response.send('Ok');
+      const listItem = await ListItemsService.update(Number(listItemId), request.body, user);
+      return response.send(listItem);
     } catch (error) {
       next(error);
     }
@@ -141,10 +181,9 @@ app.delete(
   '/list-items/:listItemId',
   checkAccess,
   async (request: Request, response: Response, next: NextFunction) => {
-    const user = storage.get(request);
     const { listItemId } = request.params;
     try {
-      await ListItemsService.remove(Number(listItemId), user);
+      await ListItemsService.remove(Number(listItemId));
       return response.send('Ok');
     } catch (error) {
       next(error);

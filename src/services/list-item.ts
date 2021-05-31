@@ -2,12 +2,13 @@ import BaseService from '~/services/base'
 import StatusesService from '~/services/statuses'
 import NotesService from './notes'
 import ListItemModel, { ListItemDataObject } from '~/models/list-item'
+import { MysqlError } from 'mysql'
 import UserModel from '~/models/user'
 
 export default class ListItemsService extends BaseService {
-  static async create (data: any) {
+  static async create (data: any, user: UserModel): Promise<ListItemModel> {
     const activeStatus = await StatusesService.getActive()
-    const note = await NotesService.findById(data.noteId, data._user)
+    const note = await NotesService.findById(data.noteId, user)
     const listItem = new ListItemModel(data)
 
     listItem.statusId = data.statusId || activeStatus.id
@@ -16,10 +17,10 @@ export default class ListItemsService extends BaseService {
     return listItem.save()
   }
 
-  static async update (listItemId: number, data: any) {
+  static async update (listItemId: number, data: any, user: UserModel): Promise<ListItemModel> {
     const activeStatus = await StatusesService.getActive()
     const listItem = await this.findById(listItemId)
-    await NotesService.findById(listItem.noteId, data._user)
+    await NotesService.findById(listItem.noteId, user)
 
     listItem.text = data.text
     listItem.statusId = data.statusId || activeStatus.id
@@ -29,9 +30,9 @@ export default class ListItemsService extends BaseService {
     return listItem.save()
   }
 
-  static async remove (listItemId: number, user:UserModel) {
+  static async remove (listItemId: number): Promise<ListItemModel> {
     const listItem = await this.findById(listItemId)
-    return listItem.remove(user)
+    return listItem.remove()
   }
 
   static async findById (listItemId: number): Promise<ListItemModel> {
@@ -42,7 +43,7 @@ export default class ListItemsService extends BaseService {
         sql: 'select * from list_items where id = ? and status_id = ?',
         values: [listItemId, activeStatus.id],
       },
-      (error, listItemsData: ListItemDataObject[]) => {
+      (error: MysqlError, listItemsData: ListItemDataObject[]) => {
         if (error) {
           return reject(error)
         }

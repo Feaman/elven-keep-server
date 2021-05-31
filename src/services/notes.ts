@@ -3,17 +3,25 @@ import StatusesService from '~/services/statuses'
 import NoteModel, { NoteDataObject } from '~/models/note'
 import TypesService from './types'
 import UserModel from '~/models/user'
+import NoteCoAuthorsService from './co-authors'
+import NoteCoAuthorModel from '~/models/co-author'
 
 export default class NotesService extends BaseService {
   static async getList (user: UserModel): Promise<NoteModel[]> {
+    let sql = `select * from notes where user_id = ? and status_id = ? order by created desc`
     const activeStatus = await StatusesService.getActive()
+    const noteCoAuthors = await NoteCoAuthorsService.findByUserId(user)
+    if (noteCoAuthors) {
+      const coAuthorsNoteIds: (number | null)[] = noteCoAuthors.map((noteCoAuthor: NoteCoAuthorModel) => noteCoAuthor.noteId)
+      sql = `select * from notes where (user_id = ? or id in ("${coAuthorsNoteIds.join('","')}")) and status_id = ? order by created desc`
+    }
 
     return new Promise((resolve, reject) => {
       const notes: NoteModel[] = []
 
       this.pool.query(
         {
-          sql: `select * from notes where user_id = ? and status_id = ? order by created desc`,
+          sql,
           values: [user.id, activeStatus.id],
         },
         (error, notesData: NoteDataObject[]) => {
@@ -21,17 +29,20 @@ export default class NotesService extends BaseService {
             return reject(error)
           }
 
-          const generateNotesPromises: Promise<NoteModel>[] = []
           notesData.forEach(async (noteData: NoteDataObject) => {
             notes.push(new NoteModel(noteData))
           })
-
+          
+          const generateNotesPromises: Promise<NoteModel>[] = []
+          const coAuthorsPromises: Promise<NoteModel>[] = []
           notes.forEach(note => {
             generateNotesPromises.push(new Promise(resolve => {
               note.fillList()
-                .then(() => {
-                  resolve(note)
-                })
+                .then(() => resolve(note))
+            }))
+            coAuthorsPromises.push(new Promise(resolve => {
+              note.fillCoAuthors()
+                .then(() => resolve(note))
             }))
           })
           Promise.all(generateNotesPromises)
@@ -41,7 +52,7 @@ export default class NotesService extends BaseService {
     })
   }
 
-  static async create (data: any) {
+  static async create (data: any, user: UserModel): Promise<NoteModel> {
     const note = new NoteModel(data)
 
     const activeStatus = await StatusesService.getActive()
@@ -51,11 +62,11 @@ export default class NotesService extends BaseService {
 
     note.handleList(data.list)
 
-    return note.save(data._user)
+    return note.save(user)
   }
 
-  static async update (noteId: number, data: any) {
-    const note = await this.findById(noteId, data._user)
+  static async update (noteId: number, data: any, user: UserModel): Promise<NoteModel> {
+    const note = await this.findById(noteId, user)
     await note.fillList()
     note.title = data.title
     note.text = data.text
@@ -70,22 +81,27 @@ export default class NotesService extends BaseService {
       note.typeId = data.typeId
     }
 
-    return note.save(data._user)
+    return note.save(user)
   }
 
-  static async remove (noteId: number, user: UserModel) {
+  static async remove (noteId: number, user: UserModel): Promise<NoteModel> {
     const note = await this.findById(noteId, user)
     await note.fillList()
     return note.remove(user)
   }
 
-  static findById (noteId: number, user: UserModel): Promise<NoteModel> {
+  static async findById (noteId: number, user: UserModel): Promise<NoteModel> {
+    let sql = 'select * from notes where id = ? and user_id = ? and status_id = ?'
+    const activeStatus = await StatusesService.getActive()
+    const noteCoAuthors = await NoteCoAuthorsService.findByUserId(user)
+    if (noteCoAuthors) {
+      const coAuthorsNoteIds: (string | null)[] = noteCoAuthors.map((noteCoAuthor: NoteCoAuthorModel) => String(noteCoAuthor.noteId))
+      sql = `select * from notes where (id = ? and user_id = ?) or id in ("${coAuthorsNoteIds.join('","')}") and status_id = ?`
+    }
+
     return new Promise((resolve, reject) => {
       this.pool.query(
-        {
-          sql: 'select * from notes where id = ? and user_id = ?',
-          values: [noteId, user.id],
-        },
+        { sql, values: [noteId, user.id, activeStatus.id]},
         (error, notesData: NoteDataObject[]) => {
           if (error) {
             return reject(error)
