@@ -8,7 +8,7 @@ import NotesService from './notes'
 import UsersService from './users'
 
 export default class NoteCoAuthorsService extends BaseService {
-  static async create (noteId: string, coAuthorEmail: string, user: UserModel): Promise<UserModel> {
+  static async create (noteId: string, coAuthorEmail: string, user: UserModel): Promise<NoteCoAuthorModel> {
     if (user.email.trim() === coAuthorEmail.trim()) {
       throw new Error(`This is note author's email`)
     }
@@ -16,6 +16,10 @@ export default class NoteCoAuthorsService extends BaseService {
     const note = await NotesService.findById(Number(noteId), user)
     if (!note) {
       throw new Error(`Note with id '${noteId}' not found`)
+    }
+
+    if (note.userId !== user.id) {
+      throw new Error(`Co-author can by added only by author`)
     }
 
     // Check co-author
@@ -32,9 +36,10 @@ export default class NoteCoAuthorsService extends BaseService {
 
     const activeStatus = await StatusesService.getActive()
     const noteCoAuthor = new NoteCoAuthorModel({ noteId: Number(noteId), userId: coAuthorUser.id, statusId: activeStatus.id })
+    noteCoAuthor.user = coAuthorUser 
 
     await noteCoAuthor.save()
-    return coAuthorUser
+    return noteCoAuthor
   }
 
   static async delete (noteCoAuthorId: number, user: UserModel): Promise<NoteCoAuthorModel> {
@@ -50,9 +55,9 @@ export default class NoteCoAuthorsService extends BaseService {
       throw new Error(`Note with id '${noteCoAuthor.noteId}' not found`)
     }
 
-    // Check note user access
-    if (note.userId !== user.id) {
-      throw new Error('There is no access to note by this user')
+    // Check who can delete co-author
+    if (!(note.userId === user.id || user.id === noteCoAuthor.userId)) {
+      throw new Error('Co-author can by deleted only by author or deleting co-author')
     }
 
     return noteCoAuthor.remove()

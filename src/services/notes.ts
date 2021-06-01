@@ -34,15 +34,15 @@ export default class NotesService extends BaseService {
           })
           
           const generateNotesPromises: Promise<NoteModel>[] = []
-          const coAuthorsPromises: Promise<NoteModel>[] = []
           notes.forEach(note => {
             generateNotesPromises.push(new Promise(resolve => {
-              note.fillList()
-                .then(() => resolve(note))
+              note.fillList().then(() => resolve(note))
             }))
-            coAuthorsPromises.push(new Promise(resolve => {
-              note.fillCoAuthors()
-                .then(() => resolve(note))
+            generateNotesPromises.push(new Promise(resolve => {
+              note.fillCoAuthors().then(() => resolve(note))
+            }))
+            generateNotesPromises.push(new Promise(resolve => {
+              note.fillUser().then(() => resolve(note))
             }))
           })
           Promise.all(generateNotesPromises)
@@ -59,6 +59,8 @@ export default class NotesService extends BaseService {
     const defaultType = await TypesService.getDefault()
     note.typeId = data.typeId || defaultType.id
     note.statusId = data.statusId || activeStatus.id
+    note.userId = user.id
+    note.user = user
 
     note.handleList(data.list)
 

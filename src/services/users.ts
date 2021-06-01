@@ -16,7 +16,7 @@ export default class UsersService extends BaseService {
   static async login (userData: UserDataObject): Promise<UserModel> {
     const user = await this.findByEmail(userData.email)
     if (!user) {
-      throw new Error('User with such an email is already exists')
+      throw new Error('Wrong email or password')
     }
 
     if (!UserModel.comparePassword(userData.password, user.passwordHash)) {

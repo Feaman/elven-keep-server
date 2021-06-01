@@ -5,6 +5,7 @@ import { MysqlError, OkPacket } from 'mysql'
 import Validator from 'validatorjs'
 import UserModel, { UserDataObject } from './user'
 import NoteCoAuthorModel, { NoteCoAuthorDataObject, NoteCoAuthorDBDataObject } from './co-author'
+import UsersService from '~/services/users'
 
 export interface NoteDataObject {
   id: number,
@@ -15,7 +16,7 @@ export interface NoteDataObject {
   user_id: number,
   is_completed_list_expanded: boolean,
   list: ListItemDataObject[],
-  coAuthors: UserModel[],
+  coAuthors: NoteCoAuthorModel[],
 }
 
 export default class NoteModel {
@@ -28,6 +29,7 @@ export default class NoteModel {
   userId: number
   isCompletedListExpanded = true
   coAuthors: NoteCoAuthorModel[] = []
+  user: UserModel | null = null
 
   static rules = {
     id: 'numeric',
@@ -46,6 +48,17 @@ export default class NoteModel {
     this.statusId = data.status_id
     this.userId = data.user_id
     this.isCompletedListExpanded = data.is_completed_list_expanded
+  }
+
+  async fillUser (): Promise<UserModel | null> {
+    const user = await UsersService.findById(String(this.userId))
+    if (!user) {
+      throw new Error(`User with id ${this.userId} not found`)
+    }
+
+    user.passwordHash = ''
+    this.user = user
+    return user
   }
 
   handleList (listItemsData: ListItemDataObject[]): void {
@@ -89,7 +102,6 @@ export default class NoteModel {
           note_co_authors.note_id,
           note_co_authors.user_id,
           note_co_authors.status_id,
-          users.id as user_id,
           users.first_name,
           users.second_name,
           users.email
@@ -97,7 +109,7 @@ export default class NoteModel {
         inner join users on users.id = note_co_authors.user_id
         where note_co_authors.note_id = ? and status_id = ${activeStatus.id}`,
         [this.id],
-        (error: MysqlError | null, coAuthorsDBData: NoteCoAuthorDBDataObject[]) => {
+        async (error: MysqlError | null, coAuthorsDBData: NoteCoAuthorDBDataObject[]) => {
           if (error) {
             return reject(error)
           }
@@ -111,7 +123,7 @@ export default class NoteModel {
               statusId: coAuthorDBData.status_id,
             }
             const userData: UserDataObject = {
-              id: 0,
+              id: coAuthorDBData.user_id,
               firstName : coAuthorDBData.first_name,
               secondName : coAuthorDBData.second_name,
               email : coAuthorDBData.email,
@@ -139,9 +151,9 @@ export default class NoteModel {
     return !!validation.passes()
   }
 
-  save (user: UserModel): Promise<NoteModel> {
+  save (user: UserModel, validate = true): Promise<NoteModel> {
     return new Promise((resolve, reject) => {
-      if (!this.validate()) {
+      if (validate && !this.validate()) {
         return reject(new Error('Note validation failed'))
       }
 
@@ -181,6 +193,6 @@ export default class NoteModel {
   async remove (user: UserModel): Promise<NoteModel> {
     const inactiveStatus = await StatusesService.getInActive()
     this.statusId = inactiveStatus.id
-    return this.save(user)
+    return this.save(user, false)
   }
 }

@@ -64,16 +64,11 @@ app.get(
   async (request: Request, response: Response, next: NextFunction) => {
     try {
       const user = storage.get(request);
-      const listTypes = await TypesService.getList();
-      const listStatuses = await StatusesService.getList();
-      const listNotes = await NotesService.getList(user);
+      const types = await TypesService.getList();
+      const statuses = await StatusesService.getList();
+      const notes = await NotesService.getList(user);
 
-      return response.status(200).json({
-        notes: listNotes,
-        types: listTypes,
-        statuses: listStatuses,
-        user,
-      });
+      return response.status(200).json({ notes, types, statuses, user });
     } catch (error) {
       return next(error);
     }
@@ -98,8 +93,8 @@ app.post(
   checkAccess,
   async (request: Request, response: Response) => {
     try {
-      const coAuthor = await NoteCoAuthorsService.create(request.params.noteId, request.body.email, storage.get(request));
-      return response.send(coAuthor);
+      const noteCoAuthor = await NoteCoAuthorsService.create(request.params.noteId, request.body.email, storage.get(request));
+      return response.send(noteCoAuthor);
     } catch (error) {
       return response.status(400).send({statusCode: 400, message: error.message });
     }
@@ -114,7 +109,7 @@ app.delete(
       const coAuthor = await NoteCoAuthorsService.delete(Number(request.params.noteIoAuthorId), storage.get(request));
       return response.send(coAuthor);
     } catch (error) {
-      return response.status(400).send({statusCode: 400, message: error.message });
+      return response.status(500).send({statusCode: 500, message: error.message });
     }
   },
 );
@@ -208,7 +203,7 @@ app.post(
         token: jwt.sign({ id: user.id }, TOKEN_KEY),
       });
     } catch (error) {
-      return next(error);
+      return response.status(400).send({statusCode: 400, message: error.message });
     }
   },
 );
@@ -230,7 +225,7 @@ app.post(
         token: jwt.sign({ id: user.id }, TOKEN_KEY),
       });
     } catch (error) {
-      return next(error);
+      return response.status(400).send({statusCode: 400, message: error.message });
     }
   },
 );

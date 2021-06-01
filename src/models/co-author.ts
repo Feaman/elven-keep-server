@@ -52,6 +52,7 @@ export default class NoteCoAuthorModel {
         return reject(new Error('Co-author validation failed'))
       }
 
+      if (!this.id) {
         const values = {
           user_id: this.userId,
           note_id: this.noteId,
@@ -68,6 +69,17 @@ export default class NoteCoAuthorModel {
             this.id = result.insertId
             resolve(this)
         })
+      } else {
+        BaseService.pool.query(
+          'update note_co_authors set user_id = ?, note_id = ?, status_id = ? where id = ?',
+          [this.userId, this.noteId, this.statusId, this.id],
+          (error: MysqlError | null) => {
+            if (error) {
+              return reject(error)
+            }
+            resolve(this)
+        })
+      }
     })
   }
 
