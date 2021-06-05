@@ -3,6 +3,7 @@ import StatusesService from '~/services/statuses'
 import Validator from 'validatorjs'
 import { MysqlError, OkPacket } from 'mysql'
 import UserModel from './user'
+import NoteModel from './note'
 
 export interface NoteCoAuthorDataObject {
   id?: number,
@@ -27,12 +28,13 @@ export default class NoteCoAuthorModel {
   noteId: number
   user: UserModel | null = null
   statusId: number
+  note: NoteModel | null  = null
 
   static rules = {
     id: 'numeric',
     userId: 'required|numeric',
     noteId: 'required|numeric',
-  };
+  }
 
   constructor (data: NoteCoAuthorDataObject) {
     this.id = data.id || null
@@ -68,7 +70,7 @@ export default class NoteCoAuthorModel {
 
             this.id = result.insertId
             resolve(this)
-        })
+          })
       } else {
         BaseService.pool.query(
           'update note_co_authors set user_id = ?, note_id = ?, status_id = ? where id = ?',
@@ -78,7 +80,7 @@ export default class NoteCoAuthorModel {
               return reject(error)
             }
             resolve(this)
-        })
+          })
       }
     })
   }

@@ -1,6 +1,7 @@
 import BaseService from '~/services/base'
 import UserModel, { UserDataObject, UserDBObject } from '~/models/user'
 import { MysqlError } from 'mysql'
+import StatusesService from './statuses'
 
 export default class UsersService extends BaseService {
   static async create (userData: UserDataObject): Promise<UserModel> {
@@ -34,7 +35,7 @@ export default class UsersService extends BaseService {
     return this.findByField('email', email)
   }
 
-  static findByField (fieldName: string, fieldValue: string): Promise<UserModel | null> {
+  static async findByField (fieldName: string, fieldValue: string): Promise<UserModel | null> {
     return new Promise((resolve, reject) => {
       this.pool.query({
         sql: `select * from users where ${fieldName} = ?`,
@@ -51,12 +52,12 @@ export default class UsersService extends BaseService {
 
         const userDBData = usersDBData[0]
         const userData: UserDataObject = {
-            id : userDBData.id,
-            firstName : userDBData.first_name,
-            secondName : userDBData.second_name,
-            email : userDBData.email,
-            passwordHash : userDBData.password_hash,
-            password : userDBData.password,
+          id : userDBData.id,
+          firstName : userDBData.first_name,
+          secondName : userDBData.second_name,
+          email : userDBData.email,
+          passwordHash : userDBData.password_hash,
+          password : userDBData.password,
         }
 
         resolve(new UserModel(userData))

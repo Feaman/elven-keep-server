@@ -2,14 +2,16 @@ import { MysqlError, OkPacket } from "mysql"
 import Validator from "validatorjs"
 import BaseService from "~/services/base"
 import StatusesService from "~/services/statuses"
+import NoteModel from "./note"
 
-export interface ListItemDataObject {
+export interface IListItem {
   id: number,
   note_id: number,
   text: string | '',
   checked: boolean,
   status_id: number,
   completed: boolean,
+  updated: string,
 }
 
 export default class ListItemModel {
@@ -19,6 +21,8 @@ export default class ListItemModel {
   checked: boolean
   statusId: number
   completed: boolean
+  note: NoteModel | null = null
+  updated: string
 
   static rules = {
     id: 'numeric',
@@ -27,15 +31,16 @@ export default class ListItemModel {
     checked: 'boolean',
     statusId: 'required|numeric',
     completed: 'boolean',
-  };
+  }
 
-  constructor (data: ListItemDataObject) {
+  constructor (data: IListItem) {
     this.id = data.id
     this.text = data.text
     this.checked = data.checked || false
     this.completed = data.completed || false
     this.statusId = data.status_id
     this.noteId = data.note_id
+    this.updated = data.updated
   }
 
   validate (): boolean {

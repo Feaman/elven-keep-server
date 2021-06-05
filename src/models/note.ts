@@ -1,4 +1,4 @@
-import ListItemModel, { ListItemDataObject } from './list-item'
+import ListItemModel, { IListItem } from './list-item'
 import BaseService from '~/services/base'
 import StatusesService from '~/services/statuses'
 import { MysqlError, OkPacket } from 'mysql'
@@ -15,8 +15,9 @@ export interface NoteDataObject {
   status_id: number,
   user_id: number,
   is_completed_list_expanded: boolean,
-  list: ListItemDataObject[],
+  list: IListItem[],
   coAuthors: NoteCoAuthorModel[],
+  updated: string,
 }
 
 export default class NoteModel {
@@ -30,6 +31,7 @@ export default class NoteModel {
   isCompletedListExpanded = true
   coAuthors: NoteCoAuthorModel[] = []
   user: UserModel | null = null
+  updated: string
 
   static rules = {
     id: 'numeric',
@@ -38,7 +40,7 @@ export default class NoteModel {
     typeId: 'required|numeric',
     statusId: 'required|numeric',
     isCompletedListExpanded: 'boolean',
-  };
+  }
 
   constructor (data: NoteDataObject) {
     this.id = data.id
@@ -48,6 +50,7 @@ export default class NoteModel {
     this.statusId = data.status_id
     this.userId = data.user_id
     this.isCompletedListExpanded = data.is_completed_list_expanded
+    this.updated = data.updated
   }
 
   async fillUser (): Promise<UserModel | null> {
@@ -61,12 +64,12 @@ export default class NoteModel {
     return user
   }
 
-  handleList (listItemsData: ListItemDataObject[]): void {
+  handleList (listItemsData: IListItem[]): void {
     if (!listItemsData.length) {
       return
     }
     const listItems: ListItemModel[] = []
-    listItemsData.forEach((listItemData: ListItemDataObject) => listItems.push(new ListItemModel(listItemData)))
+    listItemsData.forEach((listItemData: IListItem) => listItems.push(new ListItemModel(listItemData)))
     this.list = listItems
   }
 
@@ -77,13 +80,13 @@ export default class NoteModel {
       BaseService.pool.query(
         `select * from list_items where note_id = ? and status_id = ${activeStatus.id}`,
         [this.id],
-        (error: MysqlError | null, listItemsData: ListItemDataObject[]) => {
+        (error: MysqlError | null, listItemsData: IListItem[]) => {
           if (error) {
             return reject(error)
           }
 
           const listItems: ListItemModel[] = []
-          listItemsData.forEach((listItemData: ListItemDataObject) => listItems.push(new ListItemModel(listItemData)))
+          listItemsData.forEach((listItemData: IListItem) => listItems.push(new ListItemModel(listItemData)))
 
           this.list = listItems
           resolve(listItems)

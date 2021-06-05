@@ -70,6 +70,7 @@ export default class NotesService extends BaseService {
   static async update (noteId: number, data: any, user: UserModel): Promise<NoteModel> {
     const note = await this.findById(noteId, user)
     await note.fillList()
+    await note.fillCoAuthors()
     note.title = data.title
     note.text = data.text
     note.typeId = data.typeId
@@ -89,6 +90,7 @@ export default class NotesService extends BaseService {
   static async remove (noteId: number, user: UserModel): Promise<NoteModel> {
     const note = await this.findById(noteId, user)
     await note.fillList()
+    await note.fillCoAuthors()
     return note.remove(user)
   }
 

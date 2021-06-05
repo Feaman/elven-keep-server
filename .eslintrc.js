@@ -16,6 +16,9 @@ module.exports = {
     "plugin:@typescript-eslint/recommended"
   ],
   rules: {
+    "semi": ["error", "never"],
+    "@typescript-eslint/semi": ["error", "never"],
+    indent: [2, 2, { SwitchCase: 1}],
     // allow trailing comma
     "comma-dangle": ["error", "only-multiline"],
     "prefer-promise-reject-errors": 0,

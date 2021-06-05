@@ -1,231 +1,248 @@
-import cors from 'cors';
-import express, { NextFunction, Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import BaseService from './services/base';
-import NoteCoAuthorsService from './services/co-authors';
-import ListItemsService from './services/list-item';
-import NotesService from './services/notes';
-import StatusesService from './services/statuses';
-import TypesService from './services/types';
-import UsersService from './services/users';
+import cors from 'cors'
+import express, { NextFunction, Request, Response } from 'express'
+import jwt from 'jsonwebtoken'
+import BaseService from './services/base'
+import NoteCoAuthorsService from './services/co-authors'
+import ListItemsService from './services/list-item'
+import NotesService from './services/notes'
+import StatusesService from './services/statuses'
+import TypesService from './services/types'
+import UsersService from './services/users'
+import SSEService from './services/sse'
+import RequestService from './services/request'
+ 
+const PORT = 3015
 
-const TOKEN_KEY = '1a2b-3c4d-5e6f-7g8h';
-const PORT = 3015;
+const app = express()
+const storage = new WeakMap()
 
-const app = express();
-const storage = new WeakMap();
+app.use(express.json()) // for parsing application/json
+app.use(express.urlencoded({ extended: true })) // for parsing application/x-www-form-urlencoded
+app.use(cors())
 
-app.use(express.json()); // for parsing application/json
-app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
-app.use(cors());
-BaseService.init();
+BaseService.init()
 
 function checkAccess(request: Request, response: Response, next: NextFunction) {
   if (storage.get(request)) {
-    return next();
+    return next()
   }
 
-  return response.status(401).send({ message: 'Not Authorized' });
+  return response.status(401).send({ message: 'Not Authorized' })
 }
+
+app.get('/events/:userId', SSEService.eventsHandler)
 
 app.use(async (request: Request, _response: Response, next: NextFunction) => {
   try {
-    if (!request.headers.authorization) return next();
+    const user = await RequestService.getUserFromRequest(request)
 
-    const payload = <{ [key: string]: any }>(
-      jwt.verify(request.headers.authorization.split(' ')[1], TOKEN_KEY)
-    );
-    const user = await UsersService.findById(payload.id);
-    if (user) {
-      storage.set(
-        request, 
-        {
-          id: user.id,
-          firstName: user.firstName,
-          secondName: user.secondName,
-          email: user.email,
-        }
-        );
-    }
+    if (!user) return next()
+
+    storage.set(
+      request, 
+      {
+        id: user.id,
+        firstName: user.firstName,
+        secondName: user.secondName,
+        email: user.email,
+      }
+    )
     next()
-
   } catch (error) {
-    return next(error);
+    return next(error)
   }
-});
+})
 
 app.listen(PORT, async function () {
-  console.log(`STARTED on port ${PORT}`);
-});
+  console.log(`STARTED on port ${PORT}`)
+})
 
 app.get(
   '/config',
   checkAccess,
   async (request: Request, response: Response, next: NextFunction) => {
     try {
-      const user = storage.get(request);
-      const types = await TypesService.getList();
-      const statuses = await StatusesService.getList();
-      const notes = await NotesService.getList(user);
-
-      return response.status(200).json({ notes, types, statuses, user });
+      const user = storage.get(request)
+      const types = await TypesService.getList()
+      const statuses = await StatusesService.getList()
+      const notes = await NotesService.getList(user)
+      return response.status(200).json({ notes, types, statuses, user })
     } catch (error) {
-      return next(error);
+      return next(error)
     }
   },
-);
+)
 
 app.post(
   '/notes',
   checkAccess,
   async (request: Request, response: Response, next: NextFunction) => {
     try {
-      const note = await NotesService.create(request.body, storage.get(request));
-      return response.send(note);
+      const currentUser = storage.get(request)
+      const note = await NotesService.create(request.body, currentUser)
+      return response.send(note)
     } catch (error) {
-      return next(error);
+      return next(error)
     }
   },
-);
+)
 
 app.post(
   '/notes/:noteId/co-author',
   checkAccess,
   async (request: Request, response: Response) => {
     try {
-      const noteCoAuthor = await NoteCoAuthorsService.create(request.params.noteId, request.body.email, storage.get(request));
-      return response.send(noteCoAuthor);
+      const currentUser = storage.get(request)
+      const noteCoAuthor = await NoteCoAuthorsService.create(request.params.noteId, request.body.email, currentUser)
+      if (noteCoAuthor.note) {
+        SSEService.noteAdded(noteCoAuthor.note, currentUser)
+      }
+      return response.send(noteCoAuthor)
     } catch (error) {
-      return response.status(400).send({statusCode: 400, message: error.message });
+      return response.status(400).send({statusCode: 400, message: error.message })
     }
   },
-);
+)
 
 app.delete(
   '/notes/co-author/:noteIoAuthorId',
   checkAccess,
   async (request: Request, response: Response) => {
     try {
-      const coAuthor = await NoteCoAuthorsService.delete(Number(request.params.noteIoAuthorId), storage.get(request));
-      return response.send(coAuthor);
+      const currentUser = storage.get(request)
+      const noteCoAuthor = await NoteCoAuthorsService.delete(Number(request.params.noteIoAuthorId), currentUser)
+      if (noteCoAuthor.note) {
+        SSEService.noteRemoved(noteCoAuthor.note, currentUser)
+      }
+      return response.send('ok')
     } catch (error) {
-      return response.status(500).send({statusCode: 500, message: error.message });
+      return response.status(500).send({statusCode: 500, message: error.message })
     }
   },
-);
+)
 
 app.put(
   '/notes/:noteId',
   checkAccess,
   async (request: Request, response: Response, next: NextFunction) => {
     try {
-      const { noteId } = request.params;
-      const note = await NotesService.update(Number(noteId), request.body, storage.get(request));
-      response.send(note);
+      const { noteId } = request.params
+      const currentUser = storage.get(request)
+      const note = await NotesService.update(Number(noteId), request.body, currentUser)
+      SSEService.noteChanged(note, currentUser)
+      response.send(note)
     } catch (error) {
-      return next(error);
+      return next(error)
     }
   },
-);
+)
 
 app.delete(
   '/notes/:noteId',
   checkAccess,
   async (request: Request, response: Response, next: NextFunction) => {
     try {
-      const { noteId } = request.params;
-      const user = storage.get(request);
-      await NotesService.remove(Number(noteId), user);
-      return response.send('Ok');
+      const { noteId } = request.params
+      const currentUser = storage.get(request)
+      const note = await NotesService.remove(Number(noteId), currentUser)
+      SSEService.noteRemoved(note, currentUser)
+      return response.send('Ok')
     } catch (error) {
-      next(error);
+      next(error)
     }
   },
-);
+)
 
 app.post(
   '/list-items',
   checkAccess,
   async (request: Request, response: Response, next: NextFunction) => {
     try {
-      const user = storage.get(request);
-      const listItem = await ListItemsService.create(request.body, user);
-      return response.send(listItem);
+      const currentUser = storage.get(request)
+      const listItem = await ListItemsService.create(request.body, currentUser)
+      SSEService.listItemAdded(listItem, currentUser)
+      return response.send(listItem)
     } catch (error) {
-      next(error);
+      next(error)
     }
   },
-);
+)
 
 app.put(
   '/list-items/:listItemId',
   checkAccess,
   async (request: Request, response: Response, next: NextFunction) => {
-    const { listItemId } = request.params;
-    const user = storage.get(request);
+    const { listItemId } = request.params
+    const currentUser = storage.get(request)
     try {
-      const listItem = await ListItemsService.update(Number(listItemId), request.body, user);
-      return response.send(listItem);
+      const listItem = await ListItemsService.update(Number(listItemId), request.body, currentUser)
+      SSEService.listItemChanged(listItem, currentUser)
+      return response.send(listItem)
     } catch (error) {
-      next(error);
+      next(error)
     }
   },
-);
+)
 
 app.delete(
   '/list-items/:listItemId',
   checkAccess,
   async (request: Request, response: Response, next: NextFunction) => {
-    const { listItemId } = request.params;
+    const { listItemId } = request.params
     try {
-      await ListItemsService.remove(Number(listItemId));
-      return response.send('Ok');
+      const currentUser = storage.get(request)
+      const listItem = await ListItemsService.remove(Number(listItemId), currentUser)
+      SSEService.listItemRemoved(listItem, currentUser)
+      return response.send('Ok')
     } catch (error) {
-      next(error);
+      next(error)
     }
   },
-);
+)
 
 app.post(
   '/login',
-  async (request: Request, response: Response, next: NextFunction) => {
+  async (request: Request, response: Response) => {
     try {
-      const user = await UsersService.login(request.body);
-      const listTypes = await TypesService.getList();
-      const listStatuses = await StatusesService.getList();
-      const listNotes = await NotesService.getList(user);
+      const user = await UsersService.login(request.body)
+      const listTypes = await TypesService.getList()
+      const listStatuses = await StatusesService.getList()
+      const listNotes = await NotesService.getList(user)
 
       response.status(200).json({
         notes: listNotes,
         types: listTypes,
         statuses: listStatuses,
         user,
-        token: jwt.sign({ id: user.id }, TOKEN_KEY),
-      });
+        token: jwt.sign({ id: user.id }, RequestService.TOKEN_KEY),
+      })
     } catch (error) {
-      return response.status(400).send({statusCode: 400, message: error.message });
+      return response.status(400).send({statusCode: 400, message: error.message })
     }
   },
-);
+)
 
 app.post(
   '/users',
-  async (request: Request, response: Response, next: NextFunction) => {
+  async (request: Request, response: Response) => {
     try {
-      const user = await UsersService.create(request.body);
-      const listTypes = await TypesService.getList();
-      const listStatuses = await StatusesService.getList();
-      const listNotes = await NotesService.getList(user);
+      const user = await UsersService.create(request.body)
+      const listTypes = await TypesService.getList()
+      const listStatuses = await StatusesService.getList()
+      const listNotes = await NotesService.getList(user)
 
       response.status(200).json({
         notes: listNotes,
         types: listTypes,
         statuses: listStatuses,
         user,
-        token: jwt.sign({ id: user.id }, TOKEN_KEY),
-      });
+        token: jwt.sign({ id: user.id }, RequestService.TOKEN_KEY),
+      })
     } catch (error) {
-      return response.status(400).send({statusCode: 400, message: error.message });
+      return response.status(400).send({statusCode: 400, message: error.message })
     }
   },
-);
+)
+
+
+

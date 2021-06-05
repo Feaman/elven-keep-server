@@ -37,8 +37,11 @@ export default class NoteCoAuthorsService extends BaseService {
     const activeStatus = await StatusesService.getActive()
     const noteCoAuthor = new NoteCoAuthorModel({ noteId: Number(noteId), userId: coAuthorUser.id, statusId: activeStatus.id })
     noteCoAuthor.user = coAuthorUser 
-
     await noteCoAuthor.save()
+    await note.fillCoAuthors()
+    await note.fillList()
+    noteCoAuthor.note = note 
+
     return noteCoAuthor
   }
 
@@ -60,14 +63,20 @@ export default class NoteCoAuthorsService extends BaseService {
       throw new Error('Co-author can by deleted only by author or deleting co-author')
     }
 
-    return noteCoAuthor.remove()
+    noteCoAuthor.note = note 
+    await note.fillCoAuthors()
+    await note.fillList()
+    await noteCoAuthor.remove()
+    
+    return noteCoAuthor
   }
 
-  static find (noteId: number, coAuthorId: number): Promise<NoteCoAuthorModel | null> {
+  static async find (noteId: number, coAuthorId: number): Promise<NoteCoAuthorModel | null> {
+    const activeStatus = await StatusesService.getActive()
     return new Promise((resolve, reject) => {
       this.pool.query({
-        sql: `select * from note_co_authors where note_id = ? and user_id = ?`,
-        values: [noteId, coAuthorId],
+        sql: `select * from note_co_authors where note_id = ? and user_id = ? and status_id = ?`,
+        values: [noteId, coAuthorId, activeStatus.id],
       },
       (error: MysqlError, coAuthorsDBData: NoteCoAuthorDBDataObject[]) => {
         if (error) {
