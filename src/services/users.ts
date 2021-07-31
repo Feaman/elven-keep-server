@@ -1,10 +1,10 @@
 import BaseService from '~/services/base'
-import UserModel, { UserDataObject, UserDBObject } from '~/models/user'
+import UserModel, { IUser, IUserDB } from '~/models/user'
 import { MysqlError } from 'mysql'
 import StatusesService from './statuses'
 
 export default class UsersService extends BaseService {
-  static async create (userData: UserDataObject): Promise<UserModel> {
+  static async create (userData: IUser): Promise<UserModel> {
     const existentUser = await this.findByEmail(userData.email)
     if (existentUser) {
       throw new Error('User with such an email is already exists')
@@ -14,7 +14,7 @@ export default class UsersService extends BaseService {
     return user.save()
   }
 
-  static async login (userData: UserDataObject): Promise<UserModel> {
+  static async login (userData: IUser): Promise<UserModel> {
     const user = await this.findByEmail(userData.email)
     if (!user) {
       throw new Error('Wrong email or password')
@@ -41,7 +41,7 @@ export default class UsersService extends BaseService {
         sql: `select * from users where ${fieldName} = ?`,
         values: [fieldValue],
       },
-      (error: MysqlError, usersDBData: UserDBObject[]) => {
+      (error: MysqlError, usersDBData: IUserDB[]) => {
         if (error) {
           return reject(error)
         }
@@ -51,7 +51,7 @@ export default class UsersService extends BaseService {
         }
 
         const userDBData = usersDBData[0]
-        const userData: UserDataObject = {
+        const userData: IUser = {
           id : userDBData.id,
           firstName : userDBData.first_name,
           secondName : userDBData.second_name,

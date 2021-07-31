@@ -1,6 +1,6 @@
 import BaseService from '~/services/base'
 import { MysqlError } from 'mysql'
-import { NoteCoAuthorDataObject, NoteCoAuthorDBDataObject } from '~/models/co-author'
+import { INoteCoAuthor, INoteCoAuthorDB } from '~/models/co-author'
 import NoteCoAuthorModel from '~/models/co-author'
 import StatusesService from './statuses'
 import UserModel from '~/models/user'
@@ -78,7 +78,7 @@ export default class NoteCoAuthorsService extends BaseService {
         sql: `select * from note_co_authors where note_id = ? and user_id = ? and status_id = ?`,
         values: [noteId, coAuthorId, activeStatus.id],
       },
-      (error: MysqlError, coAuthorsDBData: NoteCoAuthorDBDataObject[]) => {
+      (error: MysqlError, coAuthorsDBData: INoteCoAuthorDB[]) => {
         if (error) {
           return reject(error)
         }
@@ -86,8 +86,8 @@ export default class NoteCoAuthorsService extends BaseService {
           return resolve(null)
         }
 
-        const noteCoAuthorDBData: NoteCoAuthorDBDataObject = coAuthorsDBData[0]
-        const noteCoAuthorData: NoteCoAuthorDataObject = {
+        const noteCoAuthorDBData: INoteCoAuthorDB = coAuthorsDBData[0]
+        const noteCoAuthorData: INoteCoAuthor = {
           id: noteCoAuthorDBData.id,
           noteId: noteCoAuthorDBData.note_id,
           userId: noteCoAuthorDBData.user_id,
@@ -106,7 +106,7 @@ export default class NoteCoAuthorsService extends BaseService {
         sql: `select * from note_co_authors where id = ? and status_id = ?`,
         values: [noteCoAuthorId, activeStatus.id],
       },
-      (error: MysqlError, coAuthorsDBData: NoteCoAuthorDBDataObject[]) => {
+      (error: MysqlError, coAuthorsDBData: INoteCoAuthorDB[]) => {
         if (error) {
           return reject(error)
         }
@@ -114,8 +114,8 @@ export default class NoteCoAuthorsService extends BaseService {
           return resolve(null)
         }
 
-        const noteCoAuthorDBData: NoteCoAuthorDBDataObject = coAuthorsDBData[0]
-        const noteCoAuthorData: NoteCoAuthorDataObject = {
+        const noteCoAuthorDBData: INoteCoAuthorDB = coAuthorsDBData[0]
+        const noteCoAuthorData: INoteCoAuthor = {
           id: noteCoAuthorDBData.id,
           noteId: noteCoAuthorDBData.note_id,
           userId: noteCoAuthorDBData.user_id,
@@ -134,7 +134,7 @@ export default class NoteCoAuthorsService extends BaseService {
         sql: `select * from note_co_authors where user_id = ? and status_id = ?`,
         values: [user.id, activeStatus.id],
       },
-      (error: MysqlError, coAuthorsDBData: NoteCoAuthorDBDataObject[]) => {
+      (error: MysqlError, coAuthorsDBData: INoteCoAuthorDB[]) => {
         if (error) {
           return reject(error)
         }
@@ -142,9 +142,9 @@ export default class NoteCoAuthorsService extends BaseService {
           return resolve(null)
         }
 
-        const noteCoAuthorsDBData: NoteCoAuthorDBDataObject[] = coAuthorsDBData
+        const noteCoAuthorsDBData: INoteCoAuthorDB[] = coAuthorsDBData
         const noteCoAuthors: NoteCoAuthorModel[] = []
-        noteCoAuthorsDBData.forEach((noteCoAuthorDBData: NoteCoAuthorDBDataObject) => {
+        noteCoAuthorsDBData.forEach((noteCoAuthorDBData: INoteCoAuthorDB) => {
           noteCoAuthors.push(new NoteCoAuthorModel({
             id: noteCoAuthorDBData.id,
             noteId: noteCoAuthorDBData.note_id,

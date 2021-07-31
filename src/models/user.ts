@@ -2,7 +2,7 @@ import BaseService from '~/services/base'
 import Validator from 'validatorjs'
 import { MysqlError, OkPacket } from 'mysql'
 
-export interface UserDataObject {
+export interface IUser {
   id: number,
   firstName: string,
   secondName: string,
@@ -11,7 +11,7 @@ export interface UserDataObject {
   password: string,
 }
 
-export interface UserDBObject {
+export interface IUserDB {
   id: number,
   first_name: string,
   second_name: string,
@@ -37,7 +37,7 @@ export default class UserModel {
     passwordHash: 'string',
   }
 
-  constructor (data: UserDataObject) {
+  constructor (data: IUser) {
     this.id = data.id
     this.firstName = data.firstName
     this.secondName = data.secondName

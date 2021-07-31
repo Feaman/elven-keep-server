@@ -1,5 +1,5 @@
 import BaseService from "~/services/base"
-import StatusModel, { StatusDataObject } from "~/models/status"
+import StatusModel, { IStatus } from "~/models/status"
 
 export default class StatusesService extends BaseService {
   static list: StatusModel[] = []
@@ -13,7 +13,7 @@ export default class StatusesService extends BaseService {
           if (error) {
             return reject(error)
           }
-          result.forEach((statusData: StatusDataObject) => this.list.push(new StatusModel(statusData)))
+          result.forEach((statusData: IStatus) => this.list.push(new StatusModel(statusData)))
           resolve(this.list)
         })
       }

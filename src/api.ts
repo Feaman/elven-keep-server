@@ -121,6 +121,22 @@ app.delete(
   },
 )
 
+app.put('/notes/:noteId/set-order', checkAccess, async (request, response) => {
+  try {
+    const currentUser = storage.get(request)
+    const noteId = request.params.noteId
+    await NotesService.setOrder(Number(request.params.noteId), request.body.order, currentUser)
+    //if (noteCoAuthor.note) {
+    //    SSEService.noteAdded(noteCoAuthor.note, currentUser);
+    //}
+    return response.send({noteId, order: request.body.order})
+  }
+  catch (error) {
+    return response.status(400).send({ statusCode: 400, message: error.message })
+  }
+})
+
+
 app.put(
   '/notes/:noteId',
   checkAccess,
@@ -193,7 +209,7 @@ app.delete(
       const currentUser = storage.get(request)
       const listItem = await ListItemsService.remove(Number(listItemId), currentUser)
       SSEService.listItemRemoved(listItem, currentUser)
-      return response.send('Ok')
+      return response.send({ message: 'ok' })
     } catch (error) {
       next(error)
     }

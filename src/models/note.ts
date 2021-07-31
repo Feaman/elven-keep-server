@@ -3,11 +3,11 @@ import BaseService from '~/services/base'
 import StatusesService from '~/services/statuses'
 import { MysqlError, OkPacket } from 'mysql'
 import Validator from 'validatorjs'
-import UserModel, { UserDataObject } from './user'
-import NoteCoAuthorModel, { NoteCoAuthorDataObject, NoteCoAuthorDBDataObject } from './co-author'
+import UserModel, { IUser } from './user'
+import NoteCoAuthorModel, { INoteCoAuthor, INoteCoAuthorDB } from './co-author'
 import UsersService from '~/services/users'
 
-export interface NoteDataObject {
+export interface INote {
   id: number,
   title: string | '',
   text: string | '',
@@ -17,6 +17,7 @@ export interface NoteDataObject {
   is_completed_list_expanded: boolean,
   list: IListItem[],
   coAuthors: NoteCoAuthorModel[],
+  created: string,
   updated: string,
 }
 
@@ -31,6 +32,7 @@ export default class NoteModel {
   isCompletedListExpanded = true
   coAuthors: NoteCoAuthorModel[] = []
   user: UserModel | null = null
+  created: string
   updated: string
 
   static rules = {
@@ -42,7 +44,7 @@ export default class NoteModel {
     isCompletedListExpanded: 'boolean',
   }
 
-  constructor (data: NoteDataObject) {
+  constructor (data: INote) {
     this.id = data.id
     this.title = data.title || ''
     this.text = data.text || ''
@@ -50,6 +52,7 @@ export default class NoteModel {
     this.statusId = data.status_id
     this.userId = data.user_id
     this.isCompletedListExpanded = data.is_completed_list_expanded
+    this.created = data.created
     this.updated = data.updated
   }
 
@@ -112,20 +115,20 @@ export default class NoteModel {
         inner join users on users.id = note_co_authors.user_id
         where note_co_authors.note_id = ? and status_id = ${activeStatus.id}`,
         [this.id],
-        async (error: MysqlError | null, coAuthorsDBData: NoteCoAuthorDBDataObject[]) => {
+        async (error: MysqlError | null, coAuthorsDBData: INoteCoAuthorDB[]) => {
           if (error) {
             return reject(error)
           }
 
           const coAuthors: NoteCoAuthorModel[] = []
-          coAuthorsDBData.forEach((coAuthorDBData: NoteCoAuthorDBDataObject) => {
-            const coAuthorData: NoteCoAuthorDataObject = {
+          coAuthorsDBData.forEach((coAuthorDBData: INoteCoAuthorDB) => {
+            const coAuthorData: INoteCoAuthor = {
               id : coAuthorDBData.id,
               noteId : coAuthorDBData.note_id,
               userId : coAuthorDBData.user_id,
               statusId: coAuthorDBData.status_id,
             }
-            const userData: UserDataObject = {
+            const userData: IUser = {
               id: coAuthorDBData.user_id,
               firstName : coAuthorDBData.first_name,
               secondName : coAuthorDBData.second_name,

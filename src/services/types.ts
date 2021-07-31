@@ -1,5 +1,5 @@
 import BaseService from "~/services/base"
-import TypeModel, { TypeDataObject } from "~/models/type"
+import TypeModel, { IType } from "~/models/type"
 
 export default class TypesService extends BaseService {
   static list: TypeModel[] = []
@@ -11,7 +11,7 @@ export default class TypesService extends BaseService {
           if (error) {
             return reject(error)
           }
-          result.forEach((typeData: TypeDataObject) => this.list.push(new TypeModel(typeData)))
+          result.forEach((typeData: IType) => this.list.push(new TypeModel(typeData)))
           resolve(this.list)
         })
       } else {

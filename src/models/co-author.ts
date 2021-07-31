@@ -5,14 +5,14 @@ import { MysqlError, OkPacket } from 'mysql'
 import UserModel from './user'
 import NoteModel from './note'
 
-export interface NoteCoAuthorDataObject {
+export interface INoteCoAuthor {
   id?: number,
   userId: number,
   noteId: number,
   statusId: number,
 }
 
-export interface NoteCoAuthorDBDataObject {
+export interface INoteCoAuthorDB {
   id: number,
   user_id: number,
   note_id: number,
@@ -36,7 +36,7 @@ export default class NoteCoAuthorModel {
     noteId: 'required|numeric',
   }
 
-  constructor (data: NoteCoAuthorDataObject) {
+  constructor (data: INoteCoAuthor) {
     this.id = data.id || null
     this.userId = data.userId
     this.noteId = data.noteId
