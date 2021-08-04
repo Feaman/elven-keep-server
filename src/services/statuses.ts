@@ -11,7 +11,7 @@ export default class StatusesService extends BaseService {
       } else {
         this.pool.query("SELECT * from statuses", (error: Error, result: any) => {
           if (error) {
-            return reject(error)
+            return reject({ message: "Sorry, SQL error :-c" })
           }
           result.forEach((statusData: IStatus) => this.list.push(new StatusModel(statusData)))
           resolve(this.list)

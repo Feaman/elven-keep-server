@@ -80,7 +80,7 @@ export default class NoteCoAuthorsService extends BaseService {
       },
       (error: MysqlError, coAuthorsDBData: INoteCoAuthorDB[]) => {
         if (error) {
-          return reject(error)
+          return reject({ message: "Sorry, SQL error :-c" })
         }
         if (!coAuthorsDBData.length) {
           return resolve(null)
@@ -108,7 +108,7 @@ export default class NoteCoAuthorsService extends BaseService {
       },
       (error: MysqlError, coAuthorsDBData: INoteCoAuthorDB[]) => {
         if (error) {
-          return reject(error)
+          return reject({ message: "Sorry, SQL error :-c" })
         }
         if (!coAuthorsDBData.length) {
           return resolve(null)
@@ -136,7 +136,7 @@ export default class NoteCoAuthorsService extends BaseService {
       },
       (error: MysqlError, coAuthorsDBData: INoteCoAuthorDB[]) => {
         if (error) {
-          return reject(error)
+          return reject({ message: "Sorry, SQL error :-c" })
         }
         if (!coAuthorsDBData.length) {
           return resolve(null)

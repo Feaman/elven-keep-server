@@ -27,7 +27,7 @@ export default class NotesService extends BaseService {
         },
         (error, notesData: INote[]) => {
           if (error) {
-            return reject(error)
+            return reject({ message: "Sorry, SQL error :-c" })
           }
 
           notesData.forEach(async (noteData: INote) => {
@@ -126,7 +126,7 @@ export default class NotesService extends BaseService {
         { sql, values: [noteId, user.id, activeStatus.id]},
         (error, notesData: INote[]) => {
           if (error) {
-            return reject(error)
+            return reject({ message: "Sorry, SQL error :-c" })
           }
 
           const noteData = notesData.find((noteData: INote) => noteData.id === noteId)

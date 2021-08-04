@@ -8,6 +8,7 @@ import UserModel from '~/models/user'
 export default class ListItemsService extends BaseService {
   static async create (data: IListItem, user: UserModel): Promise<ListItemModel> {
     const activeStatus = await StatusesService.getActive()
+    data.text = data.text.trim()
     const listItem = new ListItemModel(data)
     const note = await NotesService.findById(data.noteId, user)
 
@@ -29,7 +30,7 @@ export default class ListItemsService extends BaseService {
     
     await note.fillCoAuthors()
     listItem.note = note
-    listItem.text = data.text
+    listItem.text = data.text.trim()
     listItem.statusId = data.statusId || activeStatus.id
     listItem.checked = data.checked
     listItem.order = data.order 
@@ -66,7 +67,7 @@ export default class ListItemsService extends BaseService {
       },
       (error: MysqlError, listItemsData: IListItem[]) => {
         if (error) {
-          return reject(error)
+          return reject({ message: "Sorry, SQL error :-c" })
         }
 
         const listItemData = listItemsData[0]

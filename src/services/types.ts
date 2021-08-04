@@ -9,7 +9,7 @@ export default class TypesService extends BaseService {
       if (!this.list.length) {
         this.pool.query("SELECT * from types", (error: Error, result: any) => {
           if (error) {
-            return reject(error)
+            return reject({ message: "Sorry, SQL error :-c" })
           }
           result.forEach((typeData: IType) => this.list.push(new TypeModel(typeData)))
           resolve(this.list)
@@ -20,7 +20,7 @@ export default class TypesService extends BaseService {
     })
   }
 
-  static async findByName (name: string) {
+  static async findByName (name: string): Promise<TypeModel> {
     const list = await this.getList()
     const type = list.find((type: TypeModel) => type.name === name)
     if (!type) {
@@ -30,7 +30,7 @@ export default class TypesService extends BaseService {
     return type
   }
 
-  static getDefault () {
+  static getDefault (): Promise<TypeModel> {
     return this.findByName(TypeModel.TYPE_LIST)
   }
 }

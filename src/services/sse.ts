@@ -6,7 +6,9 @@ import BaseService from './base'
 import UsersService from './users'
 
 interface SSEClientInterface {
-    response: Response,
+  id: number,
+  response: Response,
+  request: Request,
 }
 
 
@@ -18,7 +20,7 @@ export default class SSEService extends BaseService {
   static EVENT_LIST_ITEM_REMOVED = 'EVENT_LIST_ITEM_REMOVED'
   static EVENT_LIST_ITEM_ADDED = 'EVENT_LIST_ITEM_ADDED'
 
-  static SSEClients: Map<number, SSEClientInterface> = new Map()
+  static SSEClients: Map<string, SSEClientInterface> = new Map()
 
   static keepAliveTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -41,10 +43,15 @@ export default class SSEService extends BaseService {
       }
       
       const userId = user.id
-      const client: SSEClientInterface = { response }
+      const client: SSEClientInterface = { 
+        id: userId,
+        response,
+        request,
+      }
 
       console.log(`SSE connected ${userId} `)
-      SSEService.SSEClients.set(userId, client)
+      SSEService.SSEClients.set(`${userId}-${request.params.salt}`, client)
+      console.log(SSEService.SSEClients)
 
       SSEService.keepAliveTimer = setInterval(function(){
         const content = `data: ${new Date().toISOString()} \n\n`
@@ -53,7 +60,8 @@ export default class SSEService extends BaseService {
 
       request.on('close', () => {
         console.log(`SSE disconnected ${userId} `)
-        SSEService.SSEClients.delete(userId)
+        SSEService.SSEClients.delete(`${userId}-${request.params.salt}`)
+        console.log(SSEService.SSEClients)
         if (SSEService.keepAliveTimer) {
           clearInterval(SSEService.keepAliveTimer)
         }
@@ -64,71 +72,79 @@ export default class SSEService extends BaseService {
     }
   }
 
-  static noteAdded(note: NoteModel, currentUser: UserModel): void {
-    this.getNoteClients(note, currentUser).forEach(noteClient => {
+  static noteAdded(request: Request, note: NoteModel, currentUser: UserModel): void {
+    this.getNoteClients(request, note, currentUser).forEach(noteClient => {
       SSEService.send(noteClient.response, this.EVENT_NOTE_ADDED, note)
     })
   }
 
-  static noteChanged(note: NoteModel, currentUser: UserModel): void {
-    this.getNoteClients(note, currentUser).forEach(noteClient => {
+  static noteChanged(request: Request, note: NoteModel, currentUser: UserModel): void {
+    this.getNoteClients(request, note, currentUser).forEach(noteClient => {
       SSEService.send(noteClient.response, this.EVENT_NOTE_CHANGED, note)
     })
   }
 
-  static noteRemoved(note: NoteModel, currentUser: UserModel): void {
-    this.getNoteClients(note, currentUser).forEach(noteClient => {
+  static noteRemoved(request: Request, note: NoteModel, currentUser: UserModel): void {
+    this.getNoteClients(request, note, currentUser).forEach(noteClient => {
       SSEService.send(noteClient.response, this.EVENT_NOTE_REMOVED, note)
     })
   }
 
-  static listItemRemoved(listItem: ListItemModel, currentUser: UserModel): void {
+  static listItemAdded(request: Request, listItem: ListItemModel, currentUser: UserModel): void {
     const note = listItem.note
     if (note) {
-      this.getNoteClients(note, currentUser).forEach(noteClient => {
-        SSEService.send(noteClient.response, this.EVENT_LIST_ITEM_REMOVED, listItem)
-      })
-    }
-  }
-
-  static listItemChanged(listItem: ListItemModel, currentUser: UserModel): void {
-    const note = listItem.note
-    if (note) {
-      this.getNoteClients(note, currentUser).forEach(noteClient => {
-        SSEService.send(noteClient.response, this.EVENT_LIST_ITEM_CHANGED, listItem)
-      })
-    }
-  }
-
-  static listItemAdded(listItem: ListItemModel, currentUser: UserModel): void {
-    const note = listItem.note
-    if (note) {
-      this.getNoteClients(note, currentUser).forEach(noteClient => {
+      this.getNoteClients(request, note, currentUser).forEach(noteClient => {
         SSEService.send(noteClient.response, this.EVENT_LIST_ITEM_ADDED, listItem)
       })
     }
   }
 
-  static getNoteClients (note: NoteModel, currentUser: UserModel): SSEClientInterface[] {
+  static listItemChanged(request: Request, listItem: ListItemModel, currentUser: UserModel): void {
+    const note = listItem.note
+    if (note) {
+      this.getNoteClients(request, note, currentUser).forEach(noteClient => {
+        SSEService.send(noteClient.response, this.EVENT_LIST_ITEM_CHANGED, listItem)
+      })
+    }
+  }
+
+  static listItemRemoved(request: Request, listItem: ListItemModel, currentUser: UserModel): void {
+    const note = listItem.note
+    if (note) {
+      this.getNoteClients(request, note, currentUser).forEach(noteClient => {
+        SSEService.send(noteClient.response, this.EVENT_LIST_ITEM_REMOVED, listItem)
+      })
+    }
+  }
+
+  static getNoteClients (request: Request, note: NoteModel, currentUser: UserModel): SSEClientInterface[] {
     const targetUserIds: number[] = []
     const clients: SSEClientInterface[] = []
 
     if (note) {
+      targetUserIds.push(currentUser.id)
+
       if (currentUser.id !== note.userId) {
         targetUserIds.push(note.userId)
       }
-      
+
       note.coAuthors.forEach(coAuthor => {
         if (currentUser.id !== coAuthor.userId) {
           targetUserIds.push(coAuthor.userId)
         }
       })
-      
+
       targetUserIds.forEach(userId => {
-        const noteClient = SSEService.SSEClients.get(userId)
-        if (noteClient) {
-          clients.push(noteClient)
-        }
+        SSEService.SSEClients.forEach((client) => {
+          console.log(request.headers['x-sse-salt'], client)
+          if (
+            client.id === userId &&
+            client.request.params.salt !== request.headers['x-sse-salt']
+          ) {
+            clients.push(client)
+          }
+        })
+        console.log(SSEService.SSEClients)
       })
     }
 

@@ -70,7 +70,7 @@ export default class UserModel {
         }
         BaseService.pool.query('insert into users set ?', data, (error: MysqlError | null, result: OkPacket) => {
           if (error) {
-            return reject(error)
+            return reject({ message: "Sorry, SQL error :-c" })
           }
 
           this.id = result.insertId
@@ -83,7 +83,7 @@ export default class UserModel {
           queryParams,
           (error: MysqlError | null) => {
             if (error) {
-              return reject(error)
+              return reject({ message: "Sorry, SQL error :-c" })
             }
             resolve(this)
           }

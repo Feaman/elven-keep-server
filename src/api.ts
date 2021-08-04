@@ -30,7 +30,7 @@ function checkAccess(request: Request, response: Response, next: NextFunction) {
   return response.status(401).send({ message: 'Not Authorized' })
 }
 
-app.get('/events/:userId', SSEService.eventsHandler)
+app.get('/events/:userId/:salt', SSEService.eventsHandler)
 
 app.use(async (request: Request, _response: Response, next: NextFunction) => {
   try {
@@ -80,6 +80,7 @@ app.post(
     try {
       const currentUser = storage.get(request)
       const note = await NotesService.create(request.body, currentUser)
+      SSEService.noteAdded(request, note, currentUser)
       return response.send(note)
     } catch (error) {
       return next(error)
@@ -95,7 +96,7 @@ app.post(
       const currentUser = storage.get(request)
       const noteCoAuthor = await NoteCoAuthorsService.create(request.params.noteId, request.body.email, currentUser)
       if (noteCoAuthor.note) {
-        SSEService.noteAdded(noteCoAuthor.note, currentUser)
+        SSEService.noteAdded(request, noteCoAuthor.note, currentUser)
       }
       return response.send(noteCoAuthor)
     } catch (error) {
@@ -112,7 +113,7 @@ app.delete(
       const currentUser = storage.get(request)
       const noteCoAuthor = await NoteCoAuthorsService.delete(Number(request.params.noteIoAuthorId), currentUser)
       if (noteCoAuthor.note) {
-        SSEService.noteRemoved(noteCoAuthor.note, currentUser)
+        SSEService.noteRemoved(request, noteCoAuthor.note, currentUser)
       }
       return response.send('ok')
     } catch (error) {
@@ -126,9 +127,6 @@ app.put('/notes/:noteId/set-order', checkAccess, async (request, response) => {
     const currentUser = storage.get(request)
     const noteId = request.params.noteId
     await NotesService.setOrder(Number(request.params.noteId), request.body.order, currentUser)
-    //if (noteCoAuthor.note) {
-    //    SSEService.noteAdded(noteCoAuthor.note, currentUser);
-    //}
     return response.send({noteId, order: request.body.order})
   }
   catch (error) {
@@ -145,7 +143,7 @@ app.put(
       const { noteId } = request.params
       const currentUser = storage.get(request)
       const note = await NotesService.update(Number(noteId), request.body, currentUser)
-      SSEService.noteChanged(note, currentUser)
+      SSEService.noteChanged(request, note, currentUser)
       response.send(note)
     } catch (error) {
       return next(error)
@@ -161,7 +159,7 @@ app.delete(
       const { noteId } = request.params
       const currentUser = storage.get(request)
       const note = await NotesService.remove(Number(noteId), currentUser)
-      SSEService.noteRemoved(note, currentUser)
+      SSEService.noteRemoved(request, note, currentUser)
       return response.send('Ok')
     } catch (error) {
       next(error)
@@ -176,7 +174,7 @@ app.post(
     try {
       const currentUser = storage.get(request)
       const listItem = await ListItemsService.create(request.body, currentUser)
-      SSEService.listItemAdded(listItem, currentUser)
+      SSEService.listItemAdded(request, listItem, currentUser)
       return response.send(listItem)
     } catch (error) {
       next(error)
@@ -192,7 +190,7 @@ app.put(
     const currentUser = storage.get(request)
     try {
       const listItem = await ListItemsService.update(Number(listItemId), request.body, currentUser)
-      SSEService.listItemChanged(listItem, currentUser)
+      SSEService.listItemChanged(request, listItem, currentUser)
       return response.send(listItem)
     } catch (error) {
       next(error)
@@ -208,7 +206,7 @@ app.delete(
     try {
       const currentUser = storage.get(request)
       const listItem = await ListItemsService.remove(Number(listItemId), currentUser)
-      SSEService.listItemRemoved(listItem, currentUser)
+      SSEService.listItemRemoved(request, listItem, currentUser)
       return response.send({ message: 'ok' })
     } catch (error) {
       next(error)

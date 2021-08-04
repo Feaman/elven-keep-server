@@ -43,7 +43,7 @@ export default class UsersService extends BaseService {
       },
       (error: MysqlError, usersDBData: IUserDB[]) => {
         if (error) {
-          return reject(error)
+          return reject({ message: "Sorry, SQL error :-c" })
         }
 
         if (!usersDBData.length) {

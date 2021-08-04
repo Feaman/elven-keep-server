@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken'
 import UsersService from "./users"
 
 export default class RequestService {
-  static TOKEN_KEY = '1a2b-3c4d-5e6f-7g8h'
+  static TOKEN_KEY = '34kj-l3k4-lk34-jk3j'
 
   static async getUserFromRequest (request: Request): Promise<UserModel | null> {
     if (request.headers.authorization){

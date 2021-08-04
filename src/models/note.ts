@@ -85,7 +85,7 @@ export default class NoteModel {
         [this.id],
         (error: MysqlError | null, listItemsData: IListItem[]) => {
           if (error) {
-            return reject(error)
+            return reject({ message: "Sorry, SQL error :-c" })
           }
 
           const listItems: ListItemModel[] = []
@@ -117,7 +117,7 @@ export default class NoteModel {
         [this.id],
         async (error: MysqlError | null, coAuthorsDBData: INoteCoAuthorDB[]) => {
           if (error) {
-            return reject(error)
+            return reject({ message: "Sorry, SQL error :-c" })
           }
 
           const coAuthors: NoteCoAuthorModel[] = []
@@ -174,7 +174,7 @@ export default class NoteModel {
         }
         BaseService.pool.query('insert into notes set ?', data, (error: MysqlError | null, result: OkPacket) => {
           if (error) {
-            return reject(error)
+            return reject({ message: "Sorry, SQL error :-c" })
           }
 
           this.id = result.insertId
@@ -187,7 +187,7 @@ export default class NoteModel {
           queryParams,
           (error: MysqlError | null) => {
             if (error) {
-              return reject(error)
+              return reject({ message: "Sorry, SQL error :-c" })
             }
             resolve(this)
           }
