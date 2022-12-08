@@ -149,10 +149,6 @@ export default class NoteModel {
   }
 
   validate (): boolean {
-    if (!((this.list && this.list.length) || this.text || this.title)) {
-      return false
-    }
-
     const validation = new Validator(this, NoteModel.rules)
     return !!validation.passes()
   }
@@ -199,6 +195,12 @@ export default class NoteModel {
   async remove (user: UserModel): Promise<NoteModel> {
     const inactiveStatus = await StatusesService.getInActive()
     this.statusId = inactiveStatus.id
+    return this.save(user, false)
+  }
+
+  async restore (user: UserModel): Promise<NoteModel> {
+    const activeStatus = await StatusesService.getActive()
+    this.statusId = activeStatus.id
     return this.save(user, false)
   }
 }

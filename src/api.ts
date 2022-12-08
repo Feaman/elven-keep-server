@@ -48,7 +48,7 @@ app.use(async (request: Request, _response: Response, next: NextFunction) => {
       }
     )
     next()
-  } catch (error) {
+  } catch (error: any) {
     return next(error)
   }
 })
@@ -67,7 +67,21 @@ app.get(
       const statuses = await StatusesService.getList()
       const notes = await NotesService.getList(user)
       return response.status(200).json({ notes, types, statuses, user })
-    } catch (error) {
+    } catch (error: any) {
+      return next(error)
+    }
+  },
+)
+
+app.get(
+  '/notes/:noteId',
+  checkAccess,
+  async (request: Request, response: Response, next: NextFunction) => {
+    try {
+      const user = storage.get(request)
+      const note = await NotesService.getNoteById(Number(request.params.noteId), user)
+      return response.status(200).json(note)
+    } catch (error: any) {
       return next(error)
     }
   },
@@ -82,8 +96,8 @@ app.post(
       const note = await NotesService.create(request.body, currentUser)
       SSEService.noteAdded(request, note, currentUser)
       return response.send(note)
-    } catch (error) {
-      return next(error)
+    } catch (error: any) {
+      return response.status(500).send({statusCode: 500, message: error.message })
     }
   },
 )
@@ -99,7 +113,7 @@ app.post(
         SSEService.noteAdded(request, noteCoAuthor.note, currentUser)
       }
       return response.send(noteCoAuthor)
-    } catch (error) {
+    } catch (error: any) {
       return response.status(400).send({statusCode: 400, message: error.message })
     }
   },
@@ -116,7 +130,7 @@ app.delete(
         SSEService.noteRemoved(request, noteCoAuthor.note, currentUser)
       }
       return response.send('ok')
-    } catch (error) {
+    } catch (error: any) {
       return response.status(500).send({statusCode: 500, message: error.message })
     }
   },
@@ -126,14 +140,16 @@ app.put('/notes/:noteId/set-order', checkAccess, async (request, response) => {
   try {
     const currentUser = storage.get(request)
     const noteId = request.params.noteId
-    await NotesService.setOrder(Number(request.params.noteId), request.body.order, currentUser)
+    const note = await NotesService.setOrder(Number(request.params.noteId), request.body.order, currentUser)
+    if (note) {
+      SSEService.setOrder(request, note, currentUser)
+    }
     return response.send({noteId, order: request.body.order})
   }
-  catch (error) {
+  catch (error: any) {
     return response.status(400).send({ statusCode: 400, message: error.message })
   }
 })
-
 
 app.put(
   '/notes/:noteId',
@@ -145,8 +161,24 @@ app.put(
       const note = await NotesService.update(Number(noteId), request.body, currentUser)
       SSEService.noteChanged(request, note, currentUser)
       response.send(note)
-    } catch (error) {
-      return next(error)
+    } catch (error: any) {
+      return response.status(500).send({statusCode: 500, message: error.message })
+    }
+  },
+)
+
+app.put(
+  '/notes/restore/:noteId',
+  checkAccess,
+  async (request: Request, response: Response, next: NextFunction) => {
+    try {
+      const { noteId } = request.params
+      const currentUser = storage.get(request)
+      const note = await NotesService.restoreById(Number(noteId), currentUser)
+      SSEService.noteAdded(request, note, currentUser)
+      return response.send('Ok')
+    } catch (error: any) {
+      return response.status(500).send({statusCode: 500, message: error.message })
     }
   },
 )
@@ -161,8 +193,8 @@ app.delete(
       const note = await NotesService.remove(Number(noteId), currentUser)
       SSEService.noteRemoved(request, note, currentUser)
       return response.send('Ok')
-    } catch (error) {
-      next(error)
+    } catch (error: any) {
+      return response.status(500).send({statusCode: 500, message: error.message })
     }
   },
 )
@@ -176,8 +208,8 @@ app.post(
       const listItem = await ListItemsService.create(request.body, currentUser)
       SSEService.listItemAdded(request, listItem, currentUser)
       return response.send(listItem)
-    } catch (error) {
-      next(error)
+    } catch (error: any) {
+      return response.status(500).send({statusCode: 500, message: error.message })
     }
   },
 )
@@ -192,8 +224,24 @@ app.put(
       const listItem = await ListItemsService.update(Number(listItemId), request.body, currentUser)
       SSEService.listItemChanged(request, listItem, currentUser)
       return response.send(listItem)
-    } catch (error) {
-      next(error)
+    } catch (error: any) {
+      return response.status(500).send({statusCode: 500, message: error.message })
+    }
+  },
+)
+
+app.put(
+  '/list-items/restore/:listItemId',
+  checkAccess,
+  async (request: Request, response: Response, next: NextFunction) => {
+    const { listItemId } = request.params
+    const currentUser = storage.get(request)
+    try {
+      const listItem = await ListItemsService.restoreById(Number(listItemId), currentUser)
+      SSEService.listItemAdded(request, listItem, currentUser)
+      return response.send('Ok')
+    } catch (error: any) {
+      return response.status(500).send({statusCode: 500, message: error.message })
     }
   },
 )
@@ -208,8 +256,8 @@ app.delete(
       const listItem = await ListItemsService.remove(Number(listItemId), currentUser)
       SSEService.listItemRemoved(request, listItem, currentUser)
       return response.send({ message: 'ok' })
-    } catch (error) {
-      next(error)
+    } catch (error: any) {
+      return response.status(500).send({statusCode: 500, message: error.message })
     }
   },
 )
@@ -230,7 +278,7 @@ app.post(
         user,
         token: jwt.sign({ id: user.id }, RequestService.TOKEN_KEY),
       })
-    } catch (error) {
+    } catch (error: any) {
       return response.status(400).send({statusCode: 400, message: error.message })
     }
   },
@@ -252,7 +300,7 @@ app.post(
         user,
         token: jwt.sign({ id: user.id }, RequestService.TOKEN_KEY),
       })
-    } catch (error) {
+    } catch (error: any) {
       return response.status(400).send({statusCode: 400, message: error.message })
     }
   },

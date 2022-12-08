@@ -16,6 +16,7 @@ export default class SSEService extends BaseService {
   static EVENT_NOTE_ADDED = 'EVENT_NOTE_ADDED'
   static EVENT_NOTE_CHANGED = 'EVENT_NOTE_CHANGED'
   static EVENT_NOTE_REMOVED = 'EVENT_NOTE_REMOVED'
+  static EVENT_NOTE_ORDER_SET = 'EVENT_NOTE_ORDER_SET'
   static EVENT_LIST_ITEM_CHANGED = 'EVENT_LIST_ITEM_CHANGED'
   static EVENT_LIST_ITEM_REMOVED = 'EVENT_LIST_ITEM_REMOVED'
   static EVENT_LIST_ITEM_ADDED = 'EVENT_LIST_ITEM_ADDED'
@@ -51,7 +52,6 @@ export default class SSEService extends BaseService {
 
       console.log(`SSE connected ${userId} `)
       SSEService.SSEClients.set(`${userId}-${request.params.salt}`, client)
-      console.log(SSEService.SSEClients)
 
       SSEService.keepAliveTimer = setInterval(function(){
         const content = `data: ${new Date().toISOString()} \n\n`
@@ -61,7 +61,6 @@ export default class SSEService extends BaseService {
       request.on('close', () => {
         console.log(`SSE disconnected ${userId} `)
         SSEService.SSEClients.delete(`${userId}-${request.params.salt}`)
-        console.log(SSEService.SSEClients)
         if (SSEService.keepAliveTimer) {
           clearInterval(SSEService.keepAliveTimer)
         }
@@ -87,6 +86,13 @@ export default class SSEService extends BaseService {
   static noteRemoved(request: Request, note: NoteModel, currentUser: UserModel): void {
     this.getNoteClients(request, note, currentUser).forEach(noteClient => {
       SSEService.send(noteClient.response, this.EVENT_NOTE_REMOVED, note)
+    })
+  }
+
+
+  static setOrder(request: Request, note: NoteModel, currentUser: UserModel): void {
+    this.getNoteClients(request, note, currentUser).forEach(noteClient => {
+      SSEService.send(noteClient.response, this.EVENT_NOTE_ORDER_SET, note)
     })
   }
 
@@ -136,7 +142,6 @@ export default class SSEService extends BaseService {
 
       targetUserIds.forEach(userId => {
         SSEService.SSEClients.forEach((client) => {
-          console.log(request.headers['x-sse-salt'], client)
           if (
             client.id === userId &&
             client.request.params.salt !== request.headers['x-sse-salt']
@@ -144,7 +149,6 @@ export default class SSEService extends BaseService {
             clients.push(client)
           }
         })
-        console.log(SSEService.SSEClients)
       })
     }
 

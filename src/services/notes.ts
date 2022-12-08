@@ -88,6 +88,13 @@ export default class NotesService extends BaseService {
     return note.save(user)
   }
 
+  static async getNoteById (noteId: number, user: UserModel): Promise<NoteModel> {
+    const note = await this.findById(noteId, user)
+    await note.fillList()
+    await note.fillCoAuthors()
+    return note
+  }
+
   static async setOrder (noteId: number, order: number[], user: UserModel): Promise<NoteModel> {
     const note = await this.findById(noteId, user)
     await note.fillList()
@@ -107,9 +114,24 @@ export default class NotesService extends BaseService {
 
   static async remove (noteId: number, user: UserModel): Promise<NoteModel> {
     const note = await this.findById(noteId, user)
+    if (!note) {
+      throw new Error(`Note with id '${noteId}' not found`)
+    }
     await note.fillList()
     await note.fillCoAuthors()
+
     return note.remove(user)
+  }
+
+  static async restoreById (noteId: number, currentUser: UserModel): Promise<NoteModel> {
+    const note = await this.findById(noteId, currentUser)
+    if (!note) {
+      throw new Error(`Note with id '${noteId}' not found`)
+    }
+    await note.fillList()
+    await note.fillCoAuthors()
+
+    return note.restore(currentUser)
   }
 
   static async findById (noteId: number, user: UserModel): Promise<NoteModel> {

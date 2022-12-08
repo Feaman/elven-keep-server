@@ -8,7 +8,6 @@ import UserModel from '~/models/user'
 export default class ListItemsService extends BaseService {
   static async create (data: IListItem, user: UserModel): Promise<ListItemModel> {
     const activeStatus = await StatusesService.getActive()
-    data.text = data.text.trim()
     const listItem = new ListItemModel(data)
     const note = await NotesService.findById(data.noteId, user)
 
@@ -20,9 +19,9 @@ export default class ListItemsService extends BaseService {
     return listItem.save()
   }
 
-  static async update (listItemId: number, data: IListItem, user: UserModel): Promise<ListItemModel> {
+  static async update (listItemId: number, data: IListItem, user: UserModel, deleted = false): Promise<ListItemModel> {
     const activeStatus = await StatusesService.getActive()
-    const listItem = await this.findById(listItemId)
+    const listItem = await this.findById(listItemId, deleted)
     if (!listItem) {
       throw new Error(`List item with id '${listItemId}' not found`)
     }
@@ -30,7 +29,7 @@ export default class ListItemsService extends BaseService {
     
     await note.fillCoAuthors()
     listItem.note = note
-    listItem.text = data.text.trim()
+    listItem.text = data.text
     listItem.statusId = data.statusId || activeStatus.id
     listItem.checked = data.checked
     listItem.order = data.order 
@@ -50,7 +49,23 @@ export default class ListItemsService extends BaseService {
     }
     await note.fillCoAuthors()
     listItem.note = note
+
     return listItem.remove()
+  }
+
+  static async restoreById (listItemId: number, currentUser: UserModel): Promise<ListItemModel> {
+    const listItem = await this.findById(listItemId, true)
+    if (!listItem) {
+      throw new Error(`List item with id '${listItemId}' not found`)
+    }
+    const note = await NotesService.findById(listItem.noteId, currentUser)
+    if (!note) {
+      throw new Error(`Note with id '${listItem.noteId}' not found`)
+    }
+    await note.fillCoAuthors()
+    listItem.note = note
+
+    return listItem.restore()
   }
 
   static async findById (listItemId: number, allStatuses = false): Promise<ListItemModel | null> {

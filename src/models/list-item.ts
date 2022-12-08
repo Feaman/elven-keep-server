@@ -34,7 +34,7 @@ export default class ListItemModel {
   static rules = {
     id: 'numeric',
     noteId: 'required|numeric',
-    text: 'required|string',
+    text: 'string',
     checked: 'boolean',
     statusId: 'required|numeric',
     completed: 'boolean',
@@ -109,6 +109,12 @@ export default class ListItemModel {
   async remove (): Promise<ListItemModel> {
     const inactiveStatus = await StatusesService.getInActive()
     this.statusId = inactiveStatus.id
+    return this.save()
+  }
+
+  async restore (): Promise<ListItemModel> {
+    const activeStatus = await StatusesService.getActive()
+    this.statusId = activeStatus.id
     return this.save()
   }
 }
