@@ -1,4 +1,5 @@
 import { Pool } from "mysql"
+import { mySqlUser, mySqlUserPassword } from "../secrets"
 
 export default class BaseService {
   static pool: Pool
@@ -7,8 +8,8 @@ export default class BaseService {
     const mysql = require("mysql")
     this.pool = mysql.createPool({
       socketPath: "/var/lib/mysql/mysql.sock",
-      user: "test",
-      password: "testpassword",
+      user: mySqlUser,
+      password: mySqlUserPassword,
       database: "test",
     })
   }

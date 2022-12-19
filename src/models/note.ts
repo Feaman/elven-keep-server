@@ -1,11 +1,11 @@
-import ListItemModel, { IListItem } from './list-item'
-import BaseService from '~/services/base'
-import StatusesService from '~/services/statuses'
 import { MysqlError, OkPacket } from 'mysql'
 import Validator from 'validatorjs'
-import UserModel, { IUser } from './user'
-import NoteCoAuthorModel, { INoteCoAuthor, INoteCoAuthorDB } from './co-author'
+import BaseService from '~/services/base'
+import StatusesService from '~/services/statuses'
 import UsersService from '~/services/users'
+import NoteCoAuthorModel, { INoteCoAuthor, INoteCoAuthorDB } from './co-author'
+import ListItemModel, { IListItem } from './list-item'
+import UserModel, { IUser } from './user'
 
 export interface INote {
   id: number,
@@ -133,6 +133,7 @@ export default class NoteModel {
               firstName : coAuthorDBData.first_name,
               secondName : coAuthorDBData.second_name,
               email : coAuthorDBData.email,
+              showChecked : coAuthorDBData.show_checked,
               password: '',
               passwordHash: '',
             }

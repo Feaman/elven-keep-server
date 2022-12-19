@@ -1,11 +1,11 @@
-import BaseService from '~/services/base'
-import StatusesService from '~/services/statuses'
-import NoteModel, { INote } from '~/models/note'
-import TypesService from './types'
-import UserModel from '~/models/user'
-import NoteCoAuthorsService from './co-authors'
 import NoteCoAuthorModel from '~/models/co-author'
 import ListItemModel from '~/models/list-item'
+import NoteModel, { INote } from '~/models/note'
+import UserModel from '~/models/user'
+import BaseService from '~/services/base'
+import StatusesService from '~/services/statuses'
+import NoteCoAuthorsService from './co-authors'
+import TypesService from './types'
 
 export default class NotesService extends BaseService {
   static async getList (user: UserModel): Promise<NoteModel[]> {
@@ -33,7 +33,7 @@ export default class NotesService extends BaseService {
           notesData.forEach(async (noteData: INote) => {
             notes.push(new NoteModel(noteData))
           })
-          
+
           const generateNotesPromises: Promise<NoteModel>[] = []
           notes.forEach(note => {
             generateNotesPromises.push(new Promise(resolve => {

@@ -5,12 +5,12 @@ import BaseService from './services/base'
 import NoteCoAuthorsService from './services/co-authors'
 import ListItemsService from './services/list-item'
 import NotesService from './services/notes'
+import RequestService from './services/request'
+import SSEService from './services/sse'
 import StatusesService from './services/statuses'
 import TypesService from './services/types'
 import UsersService from './services/users'
-import SSEService from './services/sse'
-import RequestService from './services/request'
- 
+
 const PORT = 3015
 
 const app = express()
@@ -39,12 +39,13 @@ app.use(async (request: Request, _response: Response, next: NextFunction) => {
     if (!user) return next()
 
     storage.set(
-      request, 
+      request,
       {
         id: user.id,
         firstName: user.firstName,
         secondName: user.secondName,
         email: user.email,
+        showChecked: user.showChecked,
       }
     )
     next()
@@ -300,6 +301,20 @@ app.post(
         user,
         token: jwt.sign({ id: user.id }, RequestService.TOKEN_KEY),
       })
+    } catch (error: any) {
+      return response.status(400).send({statusCode: 400, message: error.message })
+    }
+  },
+)
+
+app.put(
+  '/users',
+  checkAccess,
+  async (request: Request, response: Response) => {
+    try {
+      const currentUser = storage.get(request)
+      await UsersService.save(currentUser.id, request.body)
+      return response.send('ok')
     } catch (error: any) {
       return response.status(400).send({statusCode: 400, message: error.message })
     }

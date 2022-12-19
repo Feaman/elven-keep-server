@@ -1,9 +1,9 @@
+import { MysqlError, OkPacket } from 'mysql'
+import Validator from 'validatorjs'
 import BaseService from '~/services/base'
 import StatusesService from '~/services/statuses'
-import Validator from 'validatorjs'
-import { MysqlError, OkPacket } from 'mysql'
-import UserModel from './user'
 import NoteModel from './note'
+import UserModel from './user'
 
 export interface INoteCoAuthor {
   id?: number,
@@ -20,6 +20,7 @@ export interface INoteCoAuthorDB {
   first_name: string,
   second_name: string,
   email: string,
+  show_checked: boolean,
 }
 
 export default class NoteCoAuthorModel {
@@ -40,7 +41,7 @@ export default class NoteCoAuthorModel {
     this.id = data.id || null
     this.userId = data.userId
     this.noteId = data.noteId
-    this.statusId = data.statusId 
+    this.statusId = data.statusId
   }
 
   validate (): boolean {

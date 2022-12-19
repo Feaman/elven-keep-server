@@ -5,7 +5,7 @@ module.exports = {
   mode: "production",
   target: "node",
   entry: {
-    api: "./src/api.ts",
+    'notes-api': "./src/api.ts",
   },
   optimization: {
     minimize: false,

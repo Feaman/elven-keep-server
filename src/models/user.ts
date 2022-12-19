@@ -1,6 +1,6 @@
-import BaseService from '~/services/base'
-import Validator from 'validatorjs'
 import { MysqlError, OkPacket } from 'mysql'
+import Validator from 'validatorjs'
+import BaseService from '~/services/base'
 
 export interface IUser {
   id: number,
@@ -9,6 +9,7 @@ export interface IUser {
   email: string,
   passwordHash: string,
   password: string,
+  showChecked: boolean,
 }
 
 export interface IUserDB {
@@ -18,6 +19,7 @@ export interface IUserDB {
   email: string,
   password_hash: string,
   password: string,
+  show_checked: boolean,
 }
 
 export default class UserModel {
@@ -27,6 +29,7 @@ export default class UserModel {
   email: string
   passwordHash: string
   password: string
+  showChecked: boolean
 
   static rules = {
     id: 'numeric',
@@ -44,6 +47,7 @@ export default class UserModel {
     this.email = data.email
     this.passwordHash = data.passwordHash
     this.password = data.password
+    this.showChecked = !!data.showChecked
   }
 
   validate (): boolean {
@@ -67,6 +71,7 @@ export default class UserModel {
           second_name: this.secondName,
           email: this.email,
           password_hash: UserModel.hashPassword(this.password),
+          show_checked: this.showChecked,
         }
         BaseService.pool.query('insert into users set ?', data, (error: MysqlError | null, result: OkPacket) => {
           if (error) {
@@ -77,9 +82,9 @@ export default class UserModel {
           resolve(this)
         })
       } else {
-        const queryParams = [this.firstName, this.secondName, this.email, this.passwordHash, this.id]
+        const queryParams = [this.showChecked, this.id]
         BaseService.pool.query(
-          'update notes set first_name = ?, second_name = ?, email = ?, password_hash = ? where id = ?',
+          'update users set show_checked = ? where id = ?',
           queryParams,
           (error: MysqlError | null) => {
             if (error) {

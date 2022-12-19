@@ -1,7 +1,6 @@
-import BaseService from '~/services/base'
-import UserModel, { IUser, IUserDB } from '~/models/user'
 import { MysqlError } from 'mysql'
-import StatusesService from './statuses'
+import UserModel, { IUser, IUserDB } from '~/models/user'
+import BaseService from '~/services/base'
 
 export default class UsersService extends BaseService {
   static async create (userData: IUser): Promise<UserModel> {
@@ -11,6 +10,16 @@ export default class UsersService extends BaseService {
     }
 
     const user = new UserModel(userData)
+    return user.save()
+  }
+
+  static async save (userId: number, userData: IUser): Promise<UserModel> {
+    const user = await this.findById(String(userId))
+    if (!user) {
+      throw new Error('Wrong email or password')
+    }
+
+    user.showChecked = userData.showChecked
     return user.save()
   }
 
@@ -58,6 +67,7 @@ export default class UsersService extends BaseService {
           email : userDBData.email,
           passwordHash : userDBData.password_hash,
           password : userDBData.password,
+          showChecked : userDBData.show_checked,
         }
 
         resolve(new UserModel(userData))
