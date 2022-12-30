@@ -95,7 +95,22 @@ export default class NotesService extends BaseService {
     return note
   }
 
-  static async setOrder (noteId: number, order: number[], user: UserModel): Promise<NoteModel> {
+  static async setNotesOrder (order: number[], user: UserModel): Promise<void> {
+    const notes = await this.getList(user)
+    order.forEach(async (noteId: number, index: number) => {
+      const note = notes.find(note => note.id === noteId)
+      if (!note) {
+        throw new Error('Note not found')
+      }
+      const newOrder = index + 1
+      if (note.order !== newOrder) {
+        note.order = newOrder
+        await note.save(user)
+      }
+    })
+  }
+
+  static async setListItemsOrder (noteId: number, order: number[], user: UserModel): Promise<NoteModel> {
     const note = await this.findById(noteId, user)
     await note.fillList()
     await note.fillCoAuthors()
@@ -105,8 +120,11 @@ export default class NotesService extends BaseService {
       if (!listItem) {
         throw new Error('List item not found')
       }
-      listItem.order = index + 1
-      await listItem.save()
+      const newOrder = index + 1
+      if (listItem.order !== newOrder) {
+        listItem.order = newOrder
+        await listItem.save()
+      }
     })
 
     return note

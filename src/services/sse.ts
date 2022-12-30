@@ -42,9 +42,9 @@ export default class SSEService extends BaseService {
       if (!user) {
         throw new Error(`User with id ${request.params.userId} not found`)
       }
-      
+
       const userId = user.id
-      const client: SSEClientInterface = { 
+      const client: SSEClientInterface = {
         id: userId,
         response,
         request,
@@ -90,7 +90,7 @@ export default class SSEService extends BaseService {
   }
 
 
-  static setOrder(request: Request, note: NoteModel, currentUser: UserModel): void {
+  static setListItemsOrder(request: Request, note: NoteModel, currentUser: UserModel): void {
     this.getNoteClients(request, note, currentUser).forEach(noteClient => {
       SSEService.send(noteClient.response, this.EVENT_NOTE_ORDER_SET, note)
     })

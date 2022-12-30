@@ -137,13 +137,24 @@ app.delete(
   },
 )
 
+app.put('/notes/set-order', checkAccess, async (request, response) => {
+  try {
+    const currentUser = storage.get(request)
+    await NotesService.setNotesOrder(request.body.order, currentUser)
+    return response.send({order: request.body.order})
+  }
+  catch (error: any) {
+    return response.status(400).send({ statusCode: 400, message: error.message })
+  }
+})
+
 app.put('/notes/:noteId/set-order', checkAccess, async (request, response) => {
   try {
     const currentUser = storage.get(request)
     const noteId = request.params.noteId
-    const note = await NotesService.setOrder(Number(request.params.noteId), request.body.order, currentUser)
+    const note = await NotesService.setListItemsOrder(Number(request.params.noteId), request.body.order, currentUser)
     if (note) {
-      SSEService.setOrder(request, note, currentUser)
+      SSEService.setListItemsOrder(request, note, currentUser)
     }
     return response.send({noteId, order: request.body.order})
   }

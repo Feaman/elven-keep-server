@@ -17,6 +17,7 @@ export interface INote {
   is_completed_list_expanded: boolean,
   list: IListItem[],
   coAuthors: NoteCoAuthorModel[],
+  order: number,
   created: string,
   updated: string,
 }
@@ -29,6 +30,7 @@ export default class NoteModel {
   typeId: number
   statusId: number
   userId: number
+  order: number
   isCompletedListExpanded = true
   coAuthors: NoteCoAuthorModel[] = []
   user: UserModel | null = null
@@ -41,6 +43,7 @@ export default class NoteModel {
     text: 'string',
     typeId: 'required|numeric',
     statusId: 'required|numeric',
+    order: 'numeric',
     isCompletedListExpanded: 'boolean',
   }
 
@@ -50,6 +53,7 @@ export default class NoteModel {
     this.text = data.text || ''
     this.typeId = data.type_id
     this.statusId = data.status_id
+    this.order = data.order
     this.userId = data.user_id
     this.isCompletedListExpanded = data.is_completed_list_expanded
     this.created = data.created
@@ -168,6 +172,7 @@ export default class NoteModel {
           status_id: this.statusId,
           user_id: user.id,
           is_completed_list_expanded: (typeof this.isCompletedListExpanded === "boolean") ? this.isCompletedListExpanded : true,
+          order: this.order,
         }
         BaseService.pool.query('insert into notes set ?', data, (error: MysqlError | null, result: OkPacket) => {
           if (error) {
@@ -178,9 +183,9 @@ export default class NoteModel {
           resolve(this)
         })
       } else {
-        const queryParams = [this.title, this.text, this.statusId, this.typeId, this.isCompletedListExpanded, this.id]
+        const queryParams = [this.title, this.text, this.statusId, this.typeId, this.isCompletedListExpanded, this.order, this.id]
         BaseService.pool.query(
-          'update notes set title = ?, text = ?, status_id = ?, type_id = ?, is_completed_list_expanded = ? where id = ?',
+          'update notes set title = ?, text = ?, status_id = ?, type_id = ?, is_completed_list_expanded = ?, `order` = ? where id = ?',
           queryParams,
           (error: MysqlError | null) => {
             if (error) {
