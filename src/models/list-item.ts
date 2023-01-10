@@ -74,6 +74,7 @@ export default class ListItemModel {
         }
         BaseService.pool.query('insert into list_items set ?', data, async (error: MysqlError | null, result: OkPacket) => {
           if (error) {
+            console.error(error)
             return reject({ message: "Sorry, SQL error :-c" })
           }
 
@@ -92,6 +93,7 @@ export default class ListItemModel {
           queryParams,
           async (error: MysqlError | null) => {
             if (error) {
+              console.error(error)
               return reject({ message: "Sorry, SQL error :-c" })
             }
             const listItem = await ListItemsService.findById(this.id, true)

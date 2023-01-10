@@ -1,9 +1,9 @@
+import { MysqlError } from 'mysql'
+import ListItemModel, { IListItem } from '~/models/list-item'
+import UserModel from '~/models/user'
 import BaseService from '~/services/base'
 import StatusesService from '~/services/statuses'
 import NotesService from './notes'
-import ListItemModel, { IListItem } from '~/models/list-item'
-import { MysqlError } from 'mysql'
-import UserModel from '~/models/user'
 
 export default class ListItemsService extends BaseService {
   static async create (data: IListItem, user: UserModel): Promise<ListItemModel> {
@@ -12,6 +12,7 @@ export default class ListItemsService extends BaseService {
     const note = await NotesService.findById(data.noteId, user)
 
     await note.fillCoAuthors()
+    listItem.text = data.text.trim()
     listItem.statusId = data.statusId || activeStatus.id
     listItem.noteId = note.id
     listItem.note = note
@@ -26,13 +27,13 @@ export default class ListItemsService extends BaseService {
       throw new Error(`List item with id '${listItemId}' not found`)
     }
     const note = await NotesService.findById(listItem.noteId, user)
-    
+
     await note.fillCoAuthors()
     listItem.note = note
-    listItem.text = data.text
+    listItem.text = data.text.trim()
     listItem.statusId = data.statusId || activeStatus.id
     listItem.checked = data.checked
-    listItem.order = data.order 
+    listItem.order = data.order
     listItem.completed = data.completed
 
     return listItem.save()
@@ -70,7 +71,7 @@ export default class ListItemsService extends BaseService {
 
   static async findById (listItemId: number, allStatuses = false): Promise<ListItemModel | null> {
     const activeStatus = await StatusesService.getActive()
-    let sql = 'select * from list_items where id = ? and status_id = ?' 
+    let sql = 'select * from list_items where id = ? and status_id = ?'
     if (allStatuses) {
       sql = 'select * from list_items where id = ?'
     }
@@ -82,6 +83,7 @@ export default class ListItemsService extends BaseService {
       },
       (error: MysqlError, listItemsData: IListItem[]) => {
         if (error) {
+          console.error(error)
           return reject({ message: "Sorry, SQL error :-c" })
         }
 

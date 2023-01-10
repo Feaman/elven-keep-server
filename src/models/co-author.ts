@@ -66,6 +66,7 @@ export default class NoteCoAuthorModel {
           values,
           (error: MysqlError | null, result: OkPacket) => {
             if (error) {
+              console.error(error)
               return reject({ message: "Sorry, SQL error :-c" })
             }
 
@@ -78,6 +79,7 @@ export default class NoteCoAuthorModel {
           [this.userId, this.noteId, this.statusId, this.id],
           (error: MysqlError | null) => {
             if (error) {
+              console.error(error)
               return reject({ message: "Sorry, SQL error :-c" })
             }
             resolve(this)

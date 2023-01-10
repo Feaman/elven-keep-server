@@ -75,6 +75,7 @@ export default class UserModel {
         }
         BaseService.pool.query('insert into users set ?', data, (error: MysqlError | null, result: OkPacket) => {
           if (error) {
+            console.error(error)
             return reject({ message: "Sorry, SQL error :-c" })
           }
 
@@ -88,6 +89,7 @@ export default class UserModel {
           queryParams,
           (error: MysqlError | null) => {
             if (error) {
+              console.error(error)
               return reject({ message: "Sorry, SQL error :-c" })
             }
             resolve(this)

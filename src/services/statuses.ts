@@ -1,5 +1,5 @@
-import BaseService from "~/services/base"
 import StatusModel, { IStatus } from "~/models/status"
+import BaseService from "~/services/base"
 
 export default class StatusesService extends BaseService {
   static list: StatusModel[] = []
@@ -11,6 +11,7 @@ export default class StatusesService extends BaseService {
       } else {
         this.pool.query("SELECT * from statuses", (error: Error, result: any) => {
           if (error) {
+            console.error(error)
             return reject({ message: "Sorry, SQL error :-c" })
           }
           result.forEach((statusData: IStatus) => this.list.push(new StatusModel(statusData)))
@@ -20,7 +21,7 @@ export default class StatusesService extends BaseService {
     })
   }
 
-  static async findByName (name: string) {
+  static async findByName (name: string): Promise<StatusModel> {
     const list = await this.getList()
     const status = list.find((status: StatusModel) => status.name === name)
     if (!status) {
@@ -30,11 +31,11 @@ export default class StatusesService extends BaseService {
     return status
   }
 
-  static getActive () {
+  static getActive (): Promise<StatusModel> {
     return this.findByName(StatusModel.STATUS_ACTIVE)
   }
 
-  static getInActive () {
+  static getInActive (): Promise<StatusModel> {
     return this.findByName(StatusModel.STATUS_INACTIVE)
   }
 }

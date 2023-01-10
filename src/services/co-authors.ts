@@ -1,10 +1,9 @@
-import BaseService from '~/services/base'
 import { MysqlError } from 'mysql'
-import { INoteCoAuthor, INoteCoAuthorDB } from '~/models/co-author'
-import NoteCoAuthorModel from '~/models/co-author'
-import StatusesService from './statuses'
+import NoteCoAuthorModel, { INoteCoAuthor, INoteCoAuthorDB } from '~/models/co-author'
 import UserModel from '~/models/user'
+import BaseService from '~/services/base'
 import NotesService from './notes'
+import StatusesService from './statuses'
 import UsersService from './users'
 
 export default class NoteCoAuthorsService extends BaseService {
@@ -36,11 +35,11 @@ export default class NoteCoAuthorsService extends BaseService {
 
     const activeStatus = await StatusesService.getActive()
     const noteCoAuthor = new NoteCoAuthorModel({ noteId: Number(noteId), userId: coAuthorUser.id, statusId: activeStatus.id })
-    noteCoAuthor.user = coAuthorUser 
+    noteCoAuthor.user = coAuthorUser
     await noteCoAuthor.save()
     await note.fillCoAuthors()
     await note.fillList()
-    noteCoAuthor.note = note 
+    noteCoAuthor.note = note
 
     return noteCoAuthor
   }
@@ -63,11 +62,11 @@ export default class NoteCoAuthorsService extends BaseService {
       throw new Error('Co-author can by deleted only by author or deleting co-author')
     }
 
-    noteCoAuthor.note = note 
+    noteCoAuthor.note = note
     await note.fillCoAuthors()
     await note.fillList()
     await noteCoAuthor.remove()
-    
+
     return noteCoAuthor
   }
 
@@ -80,6 +79,7 @@ export default class NoteCoAuthorsService extends BaseService {
       },
       (error: MysqlError, coAuthorsDBData: INoteCoAuthorDB[]) => {
         if (error) {
+          console.error(error)
           return reject({ message: "Sorry, SQL error :-c" })
         }
         if (!coAuthorsDBData.length) {
@@ -108,6 +108,7 @@ export default class NoteCoAuthorsService extends BaseService {
       },
       (error: MysqlError, coAuthorsDBData: INoteCoAuthorDB[]) => {
         if (error) {
+          console.error(error)
           return reject({ message: "Sorry, SQL error :-c" })
         }
         if (!coAuthorsDBData.length) {
@@ -136,6 +137,7 @@ export default class NoteCoAuthorsService extends BaseService {
       },
       (error: MysqlError, coAuthorsDBData: INoteCoAuthorDB[]) => {
         if (error) {
+          console.error(error)
           return reject({ message: "Sorry, SQL error :-c" })
         }
         if (!coAuthorsDBData.length) {

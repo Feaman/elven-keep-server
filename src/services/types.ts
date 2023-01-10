@@ -9,6 +9,7 @@ export default class TypesService extends BaseService {
       if (!this.list.length) {
         this.pool.query("SELECT * from types", (error: Error, result: any) => {
           if (error) {
+            console.error(error)
             return reject({ message: "Sorry, SQL error :-c" })
           }
           result.forEach((typeData: IType) => this.list.push(new TypeModel(typeData)))
