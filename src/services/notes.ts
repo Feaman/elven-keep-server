@@ -26,7 +26,7 @@ export default class NotesService extends BaseService {
           values: [user.id, activeStatus.id],
         },
         (error, notesData: INote[]) => {
-          if (error) {
+          if (error as Error) {
             console.error(error)
             return reject({ message: "Sorry, SQL error :-c" })
           }

@@ -122,6 +122,10 @@ export default class SocketIOService extends BaseService {
     if (note) {
       targetUserIds.push(currentUser.id)
 
+      if (currentUser.id !== note.userId) {
+        targetUserIds.push(note.userId)
+      }
+
       note.coAuthors.forEach(coAuthor => {
         if (currentUser.id !== coAuthor.userId) {
           targetUserIds.push(coAuthor.userId)
