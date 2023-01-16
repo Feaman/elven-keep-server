@@ -21,6 +21,9 @@ app.use(express.urlencoded({ extended: true })) // for parsing application/x-www
 app.use(cors())
 
 const server = http.createServer(app)
+server.listen(PORT, async function () {
+  console.log(`Application server started on port ${PORT}`)
+})
 
 BaseService.init()
 SocketIOService.initConnection(server)
@@ -53,10 +56,6 @@ app.use(async (request: Request, _response: Response, next: NextFunction) => {
   } catch (error) {
     return next(error)
   }
-})
-
-server.listen(PORT, async function () {
-  console.log(`STARTED on port ${PORT}`)
 })
 
 app.get(
