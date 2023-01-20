@@ -64,9 +64,10 @@ app.get(
   async (request: Request, response: Response, next: NextFunction) => {
     try {
       const user = storage.get(request)
-      const types = await TypesService.getList()
-      const statuses = await StatusesService.getList()
-      const notes = await NotesService.getList(user)
+      const values = await Promise.all([TypesService.getList(), StatusesService.getList(), NotesService.getList(user)])
+      const types = values[0]
+      const statuses = values[1]
+      const notes = values[2]
       return response.status(200).json({ notes, types, statuses, user })
     } catch (error) {
       return next(error as Error)
