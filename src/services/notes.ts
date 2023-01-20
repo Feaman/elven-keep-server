@@ -91,8 +91,7 @@ export default class NotesService extends BaseService {
 
   static async getNoteById (noteId: number, user: UserModel): Promise<NoteModel> {
     const note = await this.findById(noteId, user)
-    await note.fillList()
-    await note.fillCoAuthors()
+    await Promise.all([note.fillList(),note.fillCoAuthors(), note.fillUser()])
     return note
   }
 
