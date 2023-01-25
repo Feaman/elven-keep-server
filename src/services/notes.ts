@@ -130,35 +130,37 @@ export default class NotesService extends BaseService {
     return note
   }
 
-  static async remove (noteId: number, user: UserModel): Promise<NoteModel> {
-    const note = await this.findById(noteId, user)
+  static async findAndFill(noteId: number, currentUser: UserModel, allStatuses = false): Promise<NoteModel> {
+    const note = await this.findById(noteId, currentUser, allStatuses)
     if (!note) {
       throw new Error(`Note with id '${noteId}' not found`)
     }
     await note.fillList()
     await note.fillCoAuthors()
 
-    return note.remove(user)
+    return note
+  }
+
+  static async remove (noteId: number, currentUser: UserModel): Promise<NoteModel> {
+    const note = await this.findAndFill(noteId, currentUser)
+    return note.remove(currentUser)
   }
 
   static async restoreById (noteId: number, currentUser: UserModel): Promise<NoteModel> {
-    const note = await this.findById(noteId, currentUser)
-    if (!note) {
-      throw new Error(`Note with id '${noteId}' not found`)
-    }
-    await note.fillList()
-    await note.fillCoAuthors()
-
+    const note = await this.findAndFill(noteId, currentUser, true)
     return note.restore(currentUser)
   }
 
-  static async findById (noteId: number, user: UserModel): Promise<NoteModel> {
-    let sql = 'select * from notes where id = ? and user_id = ? and status_id = ?'
+  static async findById (noteId: number, user: UserModel, allStatuses = false): Promise<NoteModel> {
+    let sql = 'select * from notes where id = ? and user_id = ?'
     const activeStatus = await StatusesService.getActive()
     const noteCoAuthors = await NoteCoAuthorsService.findByUserId(user)
     if (noteCoAuthors) {
       const coAuthorsNoteIds: (string | null)[] = noteCoAuthors.map((noteCoAuthor: NoteCoAuthorModel) => String(noteCoAuthor.noteId))
-      sql = `select * from notes where (id = ? and user_id = ?) or id in ("${coAuthorsNoteIds.join('","')}") and status_id = ?`
+      sql = `select * from notes where (id = ? and user_id = ?) or id in ("${coAuthorsNoteIds.join('","')}")`
+    }
+    if (!allStatuses) {
+      sql = sql +  ' and status_id = ?'
     }
 
     return new Promise((resolve, reject) => {
