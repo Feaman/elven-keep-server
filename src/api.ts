@@ -81,7 +81,7 @@ app.get(
   async (request: Request, response: Response, next: NextFunction) => {
     try {
       const user = storage.get(request)
-      const note = await NotesService.getNoteById(Number(request.params.noteId), user)
+      const note = await NotesService.getNoteById(Number(request.params.noteId), !!request.query.only_uncompleted, user)
       return response.status(200).json(note)
     } catch (error) {
       return next(error)

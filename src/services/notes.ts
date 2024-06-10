@@ -89,9 +89,9 @@ export default class NotesService extends BaseService {
     return note.save(user)
   }
 
-  static async getNoteById (noteId: number, user: UserModel): Promise<NoteModel> {
+  static async getNoteById (noteId: number, onlyUncompleted = false, user: UserModel): Promise<NoteModel> {
     const note = await this.findById(noteId, user)
-    await Promise.all([note.fillList(),note.fillCoAuthors(), note.fillUser()])
+    await Promise.all([note.fillList(onlyUncompleted),note.fillCoAuthors(), note.fillUser()])
     return note
   }
 

@@ -80,12 +80,12 @@ export default class NoteModel {
     this.list = listItems
   }
 
-  async fillList (): Promise<ListItemModel[]> {
+  async fillList (onlyUncompleted = false): Promise<ListItemModel[]> {
     const activeStatus = await StatusesService.getActive()
 
     return new Promise((resolve, reject) => {
       BaseService.pool.query(
-        `select * from list_items where note_id = ? and status_id = ${activeStatus.id}`,
+        `select * from list_items where note_id = ? and status_id = ${activeStatus.id}${onlyUncompleted ? ' and completed != 1' : ''}`,
         [this.id],
         (error: MysqlError | null, listItemsData: IListItem[]) => {
           if (error) {
