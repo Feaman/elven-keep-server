@@ -1,9 +1,9 @@
 import { MysqlError, OkPacket } from "mysql"
 import Validator from "validatorjs"
 import BaseService from "~/services/base"
+import ListItemsService from "~/services/list-item"
 import StatusesService from "~/services/statuses"
 import NoteModel from "./note"
-import ListItemsService from "~/services/list-item"
 
 export interface IListItem {
   id: number,
@@ -108,10 +108,27 @@ export default class ListItemModel {
     })
   }
 
-  async remove (): Promise<ListItemModel> {
-    const inactiveStatus = await StatusesService.getInActive()
-    this.statusId = inactiveStatus.id
-    return this.save()
+  async removeCompletely (): Promise<ListItemModel> {
+    return new Promise((resolve, reject) => {
+      BaseService.pool.query(`delete from list_items where id = ${this.id}`, {}, async (error: MysqlError | null) => {
+        if (error) {
+          console.error(error)
+          return reject({ message: "Sorry, SQL error :-c" })
+        }
+
+        resolve(this)
+      })
+    })
+  }
+
+  async remove (completely = false): Promise<ListItemModel> {
+    if (completely) {
+      return this.removeCompletely()
+    } else {
+      const inactiveStatus = await StatusesService.getInActive()
+      this.statusId = inactiveStatus.id
+      return this.save()
+    }
   }
 
   async restore (): Promise<ListItemModel> {

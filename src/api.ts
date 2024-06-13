@@ -104,64 +104,6 @@ app.post(
   },
 )
 
-app.post(
-  '/notes/:noteId/co-author',
-  checkAccess,
-  async (request: Request, response: Response) => {
-    try {
-      const currentUser = storage.get(request)
-      const noteCoAuthor = await NoteCoAuthorsService.create(request.params.noteId, request.body.email, currentUser)
-      if (noteCoAuthor.note) {
-        SocketIOService.noteAdded(request, noteCoAuthor.note, currentUser)
-      }
-      return response.send(noteCoAuthor)
-    } catch (error) {
-      return response.status(400).send({ statusCode: 400, message: (error as Error).message })
-    }
-  },
-)
-
-app.delete(
-  '/notes/co-author/:noteIoAuthorId',
-  checkAccess,
-  async (request: Request, response: Response) => {
-    try {
-      const currentUser = storage.get(request)
-      const noteCoAuthor = await NoteCoAuthorsService.delete(Number(request.params.noteIoAuthorId), currentUser)
-      if (noteCoAuthor.note) {
-        SocketIOService.noteRemoved(request, noteCoAuthor.note, currentUser)
-      }
-      return response.send('ok')
-    } catch (error) {
-      return response.status(500).send({ statusCode: 500, message: (error as Error).message })
-    }
-  },
-)
-
-app.put('/notes/set-order', checkAccess, async (request, response) => {
-  try {
-    const currentUser = storage.get(request)
-    const note = await NotesService.setNotesOrder(request.body.order, currentUser)
-    return response.send({ order: request.body.order })
-  }
-  catch (error) {
-    return response.status(400).send({ statusCode: 400, message: (error as Error).message })
-  }
-})
-
-app.put('/notes/:noteId/set-order', checkAccess, async (request, response) => {
-  try {
-    const currentUser = storage.get(request)
-    const noteId = request.params.noteId
-    const note = await NotesService.setListItemsOrder(Number(request.params.noteId), request.body.order, currentUser)
-    SocketIOService.setListItemsOrder(request, note, currentUser)
-    return response.send({ noteId, order: request.body.order })
-  }
-  catch (error) {
-    return response.status(400).send({ statusCode: 400, message: (error as Error).message })
-  }
-})
-
 app.put(
   '/notes/:noteId',
   checkAccess,
@@ -178,22 +120,6 @@ app.put(
   },
 )
 
-app.put(
-  '/notes/restore/:noteId',
-  checkAccess,
-  async (request: Request, response: Response) => {
-    try {
-      const { noteId } = request.params
-      const currentUser = storage.get(request)
-      const note = await NotesService.restoreById(Number(noteId), currentUser)
-      SocketIOService.noteAdded(request, note, currentUser)
-      return response.send('Ok')
-    } catch (error) {
-      return response.status(500).send({ statusCode: 500, message: (error as Error).message })
-    }
-  },
-)
-
 app.delete(
   '/notes/:noteId',
   checkAccess,
@@ -203,6 +129,22 @@ app.delete(
       const currentUser = storage.get(request)
       const note = await NotesService.remove(Number(noteId), currentUser)
       SocketIOService.noteRemoved(request, note, currentUser)
+      return response.send('Ok')
+    } catch (error) {
+      return response.status(500).send({ statusCode: 500, message: (error as Error).message })
+    }
+  },
+)
+
+app.put(
+  '/notes/restore/:noteId',
+  checkAccess,
+  async (request: Request, response: Response) => {
+    try {
+      const { noteId } = request.params
+      const currentUser = storage.get(request)
+      const note = await NotesService.restoreById(Number(noteId), currentUser)
+      SocketIOService.noteAdded(request, note, currentUser)
       return response.send('Ok')
     } catch (error) {
       return response.status(500).send({ statusCode: 500, message: (error as Error).message })
@@ -241,6 +183,22 @@ app.put(
   },
 )
 
+app.delete(
+  '/list-items/:listItemId',
+  checkAccess,
+  async (request: Request, response: Response) => {
+    const { listItemId } = request.params
+    try {
+      const currentUser = storage.get(request)
+      const listItem = await ListItemsService.remove(Number(listItemId), currentUser, !!request.body.completely)
+      SocketIOService.listItemRemoved(request, listItem, currentUser)
+      return response.send({ message: 'ok' })
+    } catch (error) {
+      return response.status(500).send({ statusCode: 500, message: (error as Error).message })
+    }
+  },
+)
+
 app.put(
   '/list-items/restore/:listItemId',
   checkAccess,
@@ -257,16 +215,58 @@ app.put(
   },
 )
 
-app.delete(
-  '/list-items/:listItemId',
+app.put('/notes/set-order', checkAccess, async (request, response) => {
+  try {
+    const currentUser = storage.get(request)
+    const note = await NotesService.setNotesOrder(request.body.order, currentUser)
+    return response.send({ order: request.body.order })
+  }
+  catch (error) {
+    return response.status(400).send({ statusCode: 400, message: (error as Error).message })
+  }
+})
+
+app.put('/notes/:noteId/set-order', checkAccess, async (request, response) => {
+  try {
+    const currentUser = storage.get(request)
+    const noteId = request.params.noteId
+    const note = await NotesService.setListItemsOrder(Number(request.params.noteId), request.body.order, currentUser)
+    SocketIOService.setListItemsOrder(request, note, currentUser)
+    return response.send({ noteId, order: request.body.order })
+  }
+  catch (error) {
+    return response.status(400).send({ statusCode: 400, message: (error as Error).message })
+  }
+})
+
+app.post(
+  '/notes/:noteId/co-author',
   checkAccess,
   async (request: Request, response: Response) => {
-    const { listItemId } = request.params
     try {
       const currentUser = storage.get(request)
-      const listItem = await ListItemsService.remove(Number(listItemId), currentUser)
-      SocketIOService.listItemRemoved(request, listItem, currentUser)
-      return response.send({ message: 'ok' })
+      const noteCoAuthor = await NoteCoAuthorsService.create(request.params.noteId, request.body.email, currentUser)
+      if (noteCoAuthor.note) {
+        SocketIOService.noteAdded(request, noteCoAuthor.note, currentUser)
+      }
+      return response.send(noteCoAuthor)
+    } catch (error) {
+      return response.status(400).send({ statusCode: 400, message: (error as Error).message })
+    }
+  },
+)
+
+app.delete(
+  '/notes/co-author/:noteIoAuthorId',
+  checkAccess,
+  async (request: Request, response: Response) => {
+    try {
+      const currentUser = storage.get(request)
+      const noteCoAuthor = await NoteCoAuthorsService.delete(Number(request.params.noteIoAuthorId), currentUser)
+      if (noteCoAuthor.note) {
+        SocketIOService.noteRemoved(request, noteCoAuthor.note, currentUser)
+      }
+      return response.send('ok')
     } catch (error) {
       return response.status(500).send({ statusCode: 500, message: (error as Error).message })
     }

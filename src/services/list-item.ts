@@ -39,7 +39,7 @@ export default class ListItemsService extends BaseService {
     return listItem.save()
   }
 
-  static async remove (listItemId: number, currentUser: UserModel): Promise<ListItemModel> {
+  static async remove (listItemId: number, currentUser: UserModel, completely = false): Promise<ListItemModel> {
     const listItem = await this.findById(listItemId)
     if (!listItem) {
       throw new Error(`List item with id '${listItemId}' not found`)
@@ -51,7 +51,7 @@ export default class ListItemsService extends BaseService {
     await note.fillCoAuthors()
     listItem.note = note
 
-    return listItem.remove()
+    return listItem.remove(completely)
   }
 
   static async restoreById (listItemId: number, currentUser: UserModel): Promise<ListItemModel> {
