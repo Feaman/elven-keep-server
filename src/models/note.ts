@@ -15,6 +15,7 @@ export interface INote {
   status_id: number,
   user_id: number,
   is_completed_list_expanded: boolean,
+  is_countable: boolean,
   list: IListItem[],
   coAuthors: NoteCoAuthorModel[],
   order: number,
@@ -32,6 +33,7 @@ export default class NoteModel {
   userId: number
   order: number
   isCompletedListExpanded = true
+  isCountable = false
   coAuthors: NoteCoAuthorModel[] = []
   user: UserModel | null = null
   created: string
@@ -45,6 +47,7 @@ export default class NoteModel {
     statusId: 'required|numeric',
     order: 'numeric',
     isCompletedListExpanded: 'boolean',
+    is_countable: 'boolean',
   }
 
   constructor (data: INote) {
@@ -56,6 +59,7 @@ export default class NoteModel {
     this.order = data.order
     this.userId = data.user_id
     this.isCompletedListExpanded = data.is_completed_list_expanded
+    this.isCountable = data.is_countable
     this.created = data.created
     this.updated = data.updated
   }
@@ -174,6 +178,7 @@ export default class NoteModel {
           status_id: this.statusId,
           user_id: user.id,
           is_completed_list_expanded: (typeof this.isCompletedListExpanded === "boolean") ? this.isCompletedListExpanded : true,
+          is_countable: (typeof this.isCountable === "boolean") ? this.isCountable : true,
           order: this.order,
         }
         BaseService.pool.query('insert into notes set ?', data, (error: MysqlError | null, result: OkPacket) => {
@@ -186,9 +191,18 @@ export default class NoteModel {
           resolve(this)
         })
       } else {
-        const queryParams = [this.title, this.text, this.statusId, this.typeId, this.isCompletedListExpanded, this.order, this.id]
+        const queryParams = [
+          this.title,
+          this.text,
+          this.statusId,
+          this.typeId,
+          this.isCompletedListExpanded,
+          this.isCountable,
+          this.order,
+          this.id
+        ]
         BaseService.pool.query(
-          'update notes set title = ?, text = ?, status_id = ?, type_id = ?, is_completed_list_expanded = ?, `order` = ? where id = ?',
+          'update notes set title = ?, text = ?, status_id = ?, type_id = ?, is_completed_list_expanded = ?, is_countable = ?, `order` = ? where id = ?',
           queryParams,
           (error: MysqlError | null) => {
             if (error) {

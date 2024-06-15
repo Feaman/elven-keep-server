@@ -77,6 +77,7 @@ export default class NotesService extends BaseService {
     note.text = data.text
     note.typeId = data.typeId
     note.isCompletedListExpanded = (typeof data.isCompletedListExpanded === "boolean") ? data.isCompletedListExpanded : true
+    note.isCountable = data.isCountable
 
     if (data.statusId) {
       note.statusId = data.statusId
