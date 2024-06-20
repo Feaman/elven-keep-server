@@ -1,6 +1,6 @@
 import NoteCoAuthorModel from '~/models/co-author'
 import ListItemModel from '~/models/list-item'
-import NoteModel, { INote } from '~/models/note'
+import NoteModel, { IDBNote, INote } from '~/models/note'
 import UserModel from '~/models/user'
 import BaseService from '~/services/base'
 import StatusesService from '~/services/statuses'
@@ -31,8 +31,10 @@ export default class NotesService extends BaseService {
             return reject({ message: "Sorry, SQL error :-c" })
           }
 
-          notesData.forEach(async (noteData: INote) => {
-            notes.push(new NoteModel(noteData))
+          notesData.forEach(async (noteDBData: INote | IDBNote) => {
+            (noteDBData as INote).isCompletedListExpanded = (noteDBData as IDBNote).is_completed_list_expanded;
+            (noteDBData as INote).isCountable = (noteDBData as IDBNote).is_countable
+            notes.push(new NoteModel(noteDBData as INote))
           })
 
           const generateNotesPromises: Promise<NoteModel>[] = []

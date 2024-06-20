@@ -7,7 +7,7 @@ import NoteCoAuthorModel, { INoteCoAuthor, INoteCoAuthorDB } from './co-author'
 import ListItemModel, { IListItem } from './list-item'
 import UserModel, { IUser } from './user'
 
-export interface INote {
+export interface IDBNote {
   id: number,
   title: string | '',
   text: string | '',
@@ -16,6 +16,22 @@ export interface INote {
   user_id: number,
   is_completed_list_expanded: boolean,
   is_countable: boolean,
+  list: IListItem[],
+  coAuthors: NoteCoAuthorModel[],
+  order: number,
+  created: string,
+  updated: string,
+}
+
+export interface INote {
+  id: number,
+  title: string | '',
+  text: string | '',
+  type_id: number,
+  status_id: number,
+  user_id: number,
+  isCompletedListExpanded: boolean,
+  isCountable: boolean,
   list: IListItem[],
   coAuthors: NoteCoAuthorModel[],
   order: number,
@@ -32,7 +48,7 @@ export default class NoteModel {
   statusId: number
   userId: number
   order: number
-  isCompletedListExpanded = true
+  isCompletedListExpanded = false
   isCountable = false
   coAuthors: NoteCoAuthorModel[] = []
   user: UserModel | null = null
@@ -58,8 +74,8 @@ export default class NoteModel {
     this.statusId = data.status_id
     this.order = data.order
     this.userId = data.user_id
-    this.isCompletedListExpanded = data.is_completed_list_expanded
-    this.isCountable = data.is_countable
+    this.isCompletedListExpanded = data.isCompletedListExpanded
+    this.isCountable = data.isCountable
     this.created = data.created
     this.updated = data.updated
   }
