@@ -19,7 +19,6 @@ export default class UsersService extends BaseService {
       throw new Error('Wrong email or password')
     }
 
-    user.showChecked = userData.showChecked
     return user.save()
   }
 
@@ -68,7 +67,6 @@ export default class UsersService extends BaseService {
           email : userDBData.email,
           passwordHash : userDBData.password_hash,
           password : userDBData.password,
-          showChecked : userDBData.show_checked,
         }
 
         resolve(new UserModel(userData))

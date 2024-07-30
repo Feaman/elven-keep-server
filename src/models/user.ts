@@ -9,7 +9,6 @@ export interface IUser {
   email: string,
   passwordHash: string,
   password: string,
-  showChecked: boolean,
 }
 
 export interface IUserDB {
@@ -19,7 +18,6 @@ export interface IUserDB {
   email: string,
   password_hash: string,
   password: string,
-  show_checked: boolean,
 }
 
 export default class UserModel {
@@ -29,7 +27,6 @@ export default class UserModel {
   email: string
   passwordHash: string
   password: string
-  showChecked: boolean
 
   static rules = {
     id: 'numeric',
@@ -47,7 +44,6 @@ export default class UserModel {
     this.email = data.email
     this.passwordHash = data.passwordHash
     this.password = data.password
-    this.showChecked = !!data.showChecked
   }
 
   validate (): boolean {
@@ -57,45 +53,44 @@ export default class UserModel {
 
   save (): Promise<UserModel> {
     return new Promise((resolve, reject) => {
-      const validation = new Validator(this, { email: UserModel.rules.email })
-      if (validation.fails()) {
-        return reject(new Error('Email format is so wrong'))
-      }
-      if (!this.validate()) {
-        return reject(new Error('User validation failed'))
-      }
+      // const validation = new Validator(this, { email: UserModel.rules.email })
+      // if (validation.fails()) {
+      //   return reject(new Error('Email format is so wrong'))
+      // }
+      // if (!this.validate()) {
+      //   return reject(new Error('User validation failed'))
+      // }
 
-      if (!this.id) {
-        const data = {
-          first_name: this.firstName,
-          second_name: this.secondName,
-          email: this.email,
-          password_hash: UserModel.hashPassword(this.password),
-          show_checked: this.showChecked,
-        }
-        BaseService.pool.query('insert into users set ?', data, (error: MysqlError | null, result: OkPacket) => {
-          if (error) {
-            console.error(error)
-            return reject({ message: "Sorry, SQL error :-c" })
-          }
+      // if (!this.id) {
+      //   const data = {
+      //     first_name: this.firstName,
+      //     second_name: this.secondName,
+      //     email: this.email,
+      //     password_hash: UserModel.hashPassword(this.password),
+      //   }
+      //   BaseService.pool.query('insert into users set ?', data, (error: MysqlError | null, result: OkPacket) => {
+      //     if (error) {
+      //       console.error(error)
+      //       return reject({ message: "Sorry, SQL error :-c" })
+      //     }
 
-          this.id = result.insertId
-          resolve(this)
-        })
-      } else {
-        const queryParams = [this.showChecked, this.id]
-        BaseService.pool.query(
-          'update users set show_checked = ? where id = ?',
-          queryParams,
-          (error: MysqlError | null) => {
-            if (error) {
-              console.error(error)
-              return reject({ message: "Sorry, SQL error :-c" })
-            }
-            resolve(this)
-          }
-        )
-      }
+      //     this.id = result.insertId
+      //     resolve(this)
+      //   })
+      // } else {
+      //   const queryParams = [this.id]
+      //   BaseService.pool.query(
+      //     'update users set show_checked = ? where id = ?',
+      //     queryParams,
+      //     (error: MysqlError | null) => {
+      //       if (error) {
+      //         console.error(error)
+      //         return reject({ message: "Sorry, SQL error :-c" })
+      //       }
+      //       resolve(this)
+      //     }
+      //   )
+      // }
     })
   }
 

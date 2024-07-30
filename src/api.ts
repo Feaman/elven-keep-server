@@ -49,7 +49,6 @@ app.use(async (request: Request, _response: Response, next: NextFunction) => {
         firstName: user.firstName,
         secondName: user.secondName,
         email: user.email,
-        showChecked: user.showChecked,
       }
     )
     next()

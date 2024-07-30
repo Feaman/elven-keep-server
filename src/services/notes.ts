@@ -33,7 +33,8 @@ export default class NotesService extends BaseService {
 
           notesData.forEach(async (noteDBData: INote | IDBNote) => {
             (noteDBData as INote).isCompletedListExpanded = (noteDBData as IDBNote).is_completed_list_expanded;
-            (noteDBData as INote).isCountable = (noteDBData as IDBNote).is_countable
+            (noteDBData as INote).isCountable = (noteDBData as IDBNote).is_countable;
+            (noteDBData as INote).isShowCheckedCheckboxes = (noteDBData as IDBNote).is_show_checked_checkboxes
             notes.push(new NoteModel(noteDBData as INote))
           })
 
@@ -80,6 +81,7 @@ export default class NotesService extends BaseService {
     note.typeId = data.typeId
     note.isCompletedListExpanded = (typeof data.isCompletedListExpanded === "boolean") ? data.isCompletedListExpanded : true
     note.isCountable = data.isCountable
+    note.isShowCheckedCheckboxes = data.isShowCheckedCheckboxes
 
     if (data.statusId) {
       note.statusId = data.statusId

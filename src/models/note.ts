@@ -16,6 +16,7 @@ export interface IDBNote {
   user_id: number,
   is_completed_list_expanded: boolean,
   is_countable: boolean,
+  is_show_checked_checkboxes : boolean,
   list: IListItem[],
   coAuthors: NoteCoAuthorModel[],
   order: number,
@@ -32,6 +33,7 @@ export interface INote {
   user_id: number,
   isCompletedListExpanded: boolean,
   isCountable: boolean,
+  isShowCheckedCheckboxes: boolean,
   list: IListItem[],
   coAuthors: NoteCoAuthorModel[],
   order: number,
@@ -50,6 +52,7 @@ export default class NoteModel {
   order: number
   isCompletedListExpanded = false
   isCountable = false
+  isShowCheckedCheckboxes = false
   coAuthors: NoteCoAuthorModel[] = []
   user: UserModel | null = null
   created: string
@@ -76,6 +79,7 @@ export default class NoteModel {
     this.userId = data.user_id
     this.isCompletedListExpanded = data.isCompletedListExpanded
     this.isCountable = data.isCountable
+    this.isShowCheckedCheckboxes = data.isShowCheckedCheckboxes
     this.created = data.created
     this.updated = data.updated
   }
@@ -159,7 +163,6 @@ export default class NoteModel {
               firstName : coAuthorDBData.first_name,
               secondName : coAuthorDBData.second_name,
               email : coAuthorDBData.email,
-              showChecked : coAuthorDBData.show_checked,
               password: '',
               passwordHash: '',
             }
@@ -195,6 +198,7 @@ export default class NoteModel {
           user_id: user.id,
           is_completed_list_expanded: (typeof this.isCompletedListExpanded === "boolean") ? this.isCompletedListExpanded : true,
           is_countable: (typeof this.isCountable === "boolean") ? this.isCountable : true,
+          is_show_checked_checkboxes: (typeof this.isShowCheckedCheckboxes === "boolean") ? this.isShowCheckedCheckboxes : true,
           order: this.order,
         }
         BaseService.pool.query('insert into notes set ?', data, (error: MysqlError | null, result: OkPacket) => {
@@ -214,11 +218,12 @@ export default class NoteModel {
           this.typeId,
           this.isCompletedListExpanded,
           this.isCountable,
+          this.isShowCheckedCheckboxes,
           this.order,
           this.id
         ]
         BaseService.pool.query(
-          'update notes set title = ?, text = ?, status_id = ?, type_id = ?, is_completed_list_expanded = ?, is_countable = ?, `order` = ? where id = ?',
+          'update notes set title = ?, text = ?, status_id = ?, type_id = ?, is_completed_list_expanded = ?, is_countable = ?, is_show_checked_checkboxes = ?, `order` = ? where id = ?',
           queryParams,
           (error: MysqlError | null) => {
             if (error) {
