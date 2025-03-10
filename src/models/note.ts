@@ -237,6 +237,24 @@ export default class NoteModel {
     })
   }
 
+  complete (): Promise<NoteModel> {
+    return new Promise((resolve, reject) => {
+      const queryParams = [ this.id ]
+      BaseService.pool.query(
+        'update list_items set completed = 1 where note_id = ? and checked = 1 and completed = 0;',
+        queryParams,
+        (error: MysqlError | null, data) => {
+          if (error) {
+            console.error(error)
+            return reject({ message: "Sorry, SQL error :-c" })
+          }
+          console.log('data: ', data)
+          resolve(this)
+        }
+      )
+    })
+  }
+
   async remove (user: UserModel): Promise<NoteModel> {
     const inactiveStatus = await StatusesService.getInActive()
     this.statusId = inactiveStatus.id

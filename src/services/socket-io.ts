@@ -1,6 +1,6 @@
 import { Request } from 'express'
 import http from 'http'
-import { Server as SocketIOServer, Socket } from 'socket.io'
+import { Socket, Server as SocketIOServer } from 'socket.io'
 import ListItemModel from '~/models/list-item'
 import NoteModel from '~/models/note'
 import UserModel from '~/models/user'
@@ -16,6 +16,7 @@ interface ClientInterface {
 export default class SocketIOService extends BaseService {
   static EVENT_NOTE_ADDED = 'EVENT_NOTE_ADDED'
   static EVENT_NOTE_CHANGED = 'EVENT_NOTE_CHANGED'
+  static EVENT_NOTE_COMPLETED = 'EVENT_NOTE_COMPLETED'
   static EVENT_NOTE_REMOVED = 'EVENT_NOTE_REMOVED'
   static EVENT_NOTE_ORDER_SET = 'EVENT_NOTE_ORDER_SET'
   static EVENT_LIST_ITEM_CHANGED = 'EVENT_LIST_ITEM_CHANGED'
@@ -72,6 +73,12 @@ export default class SocketIOService extends BaseService {
   static noteChanged(request: Request, note: NoteModel, currentUser: UserModel): void {
     this.getNoteClients(request, note, currentUser).forEach(client => {
       client.socket.emit(this.EVENT_NOTE_CHANGED, note)
+    })
+  }
+
+  static noteCompleted(request: Request, note: NoteModel, currentUser: UserModel): void {
+    this.getNoteClients(request, note, currentUser).forEach(client => {
+      client.socket.emit(this.EVENT_NOTE_COMPLETED, note)
     })
   }
 

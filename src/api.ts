@@ -151,12 +151,34 @@ app.put(
   },
 )
 
+app.put(
+  '/notes/complete/:noteId',
+  checkAccess,
+  async (request: Request, response: Response) => {
+    const { noteId } = request.params
+    const currentUser = storage.get(request)
+    try {
+      const note = await NotesService.complete(Number(noteId), currentUser)
+      SocketIOService.noteCompleted(request, note, currentUser)
+      return response.send(note)
+    } catch (error) {
+      return response.status(500).send({ statusCode: 500, message: (error as Error).message })
+    }
+  },
+)
+
 app.post(
   '/list-items',
   checkAccess,
   async (request: Request, response: Response) => {
     try {
       const currentUser = storage.get(request)
+      if (request.body.checked === '0' || request.body.checked === 'false') {
+        request.body.checked = false
+      }
+      if (request.body.completed === '0' || request.body.completed === 'false') {
+        request.body.completed = false
+      }
       const listItem = await ListItemsService.create(request.body, currentUser)
       SocketIOService.listItemAdded(request, listItem, currentUser)
       return response.send(listItem)
@@ -173,6 +195,12 @@ app.put(
     const { listItemId } = request.params
     const currentUser = storage.get(request)
     try {
+      if (request.body.checked === '0' || request.body.checked === 'false') {
+        request.body.checked = false
+      }
+      if (request.body.completed === '0' || request.body.completed === 'false') {
+        request.body.completed = false
+      }
       const listItem = await ListItemsService.update(Number(listItemId), request.body, currentUser)
       SocketIOService.listItemChanged(request, listItem, currentUser)
       return response.send(listItem)

@@ -115,6 +115,16 @@ export default class NotesService extends BaseService {
     })
   }
 
+  static async complete (noteId: number, user: UserModel): Promise<NoteModel> {
+    const note = await this.findById(noteId, user)
+      if (note.userId !== user.id) {
+        throw new Error(`Note with id ${noteId} not found`)
+      }
+      await note.complete()
+      await note.fillList()
+      return note
+  }
+
   static async setListItemsOrder (noteId: number, order: number[], user: UserModel): Promise<NoteModel> {
     const note = await this.findById(noteId, user)
     await note.fillList()
