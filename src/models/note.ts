@@ -248,7 +248,6 @@ export default class NoteModel {
             console.error(error)
             return reject({ message: "Sorry, SQL error :-c" })
           }
-          console.log('data: ', data)
           resolve(this)
         }
       )
