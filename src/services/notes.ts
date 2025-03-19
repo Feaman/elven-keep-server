@@ -8,13 +8,18 @@ import NoteCoAuthorsService from './co-authors'
 import TypesService from './types'
 
 export default class NotesService extends BaseService {
-  static async getList (user: UserModel): Promise<NoteModel[]> {
+  static async getList (user: UserModel, ids: number[] = []): Promise<NoteModel[]> {
     let sql = `select * from notes where user_id = ? and status_id = ? order by created desc`
     const activeStatus = await StatusesService.getActive()
-    const noteCoAuthors = await NoteCoAuthorsService.findByUserId(user)
-    if (noteCoAuthors) {
-      const coAuthorsNoteIds: (number | null)[] = noteCoAuthors.map((noteCoAuthor: NoteCoAuthorModel) => noteCoAuthor.noteId)
-      sql = `select * from notes where (user_id = ? or id in ("${coAuthorsNoteIds.join('","')}")) and status_id = ? order by created desc`
+
+    if (ids.length) {
+      sql = `select * from notes where user_id = ? and id in ("${ids.join('","')}") and status_id = ? order by created desc`
+    } else {
+      const noteCoAuthors = await NoteCoAuthorsService.findByUserId(user)
+      if (noteCoAuthors) {
+        const coAuthorsNoteIds: (number | null)[] = noteCoAuthors.map((noteCoAuthor: NoteCoAuthorModel) => noteCoAuthor.noteId)
+        sql = `select * from notes where (user_id = ? or id in ("${coAuthorsNoteIds.join('","')}")) and status_id = ? order by created desc`
+      }
     }
 
     return new Promise((resolve, reject) => {
@@ -41,7 +46,7 @@ export default class NotesService extends BaseService {
           const generateNotesPromises: Promise<NoteModel>[] = []
           notes.forEach(note => {
             generateNotesPromises.push(new Promise(resolve => {
-              note.fillList().then(() => resolve(note))
+              note.fillList(!!ids.length).then(() => resolve(note))
             }))
             generateNotesPromises.push(new Promise(resolve => {
               note.fillCoAuthors().then(() => resolve(note))

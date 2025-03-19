@@ -75,6 +75,20 @@ app.get(
 )
 
 app.get(
+  '/watch-notes',
+  checkAccess,
+  async (request: Request, response: Response, next: NextFunction) => {
+    try {
+      const user = storage.get(request)
+      const notes = await NotesService.getList(user, [382, 387])
+      return response.status(200).json(notes)
+    } catch (error) {
+      return next(error)
+    }
+  },
+)
+
+app.get(
   '/notes/:noteId',
   checkAccess,
   async (request: Request, response: Response, next: NextFunction) => {
